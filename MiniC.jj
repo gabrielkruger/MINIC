@@ -1,0 +1,4349 @@
+/* Projeto - Trabalho de Conclusão de Curso 
+*
+* Nome:         Gabriel de Quadros Kruger
+* Matrícula:    20201086
+* Curso:        Ciência da Computação
+* Universidade: Universidade Federal de Pelotas - UFPEL
+* Semestre:     2022/1
+*
+*/
+
+
+
+// ============================= IMPORTAÇÃO DE BIBLIOTECAS JAVA ====================================
+
+
+
+PARSER_BEGIN(MiniC)
+import java.io.*;            // Permite a utilização dos componentes mais primários, como entrada e saída.
+import java.util.ArrayList;  // Array list, utilizado para criação de listas no projeto.
+import java.io.PrintWriter;  // Utilizado para leitura e escrita de arquivo, gerando o arquivo de saída.
+
+
+
+// =============================== INICIO DA ARVORE SINTATICA ======================================
+
+
+
+class A_MINIC {
+	/* Variáveis globais do projeto */
+	static int contadorGlobal;                                                    // Contador global, utilizado dentro da transaction controlando o nome das variaveis como: _001_
+	static ArrayList<String> direitaDaAtribuicao = new ArrayList();               // Utilizado para salvar as variaveis que ficam a direita da atribuição de uma transaction, necessário para as traduções.
+	static ArrayList<String> direitaDaAtribuicaoSemRepeticao = new ArrayList();   // Removendo as repetições da lista declarada acima, e armazenando nesta lista.
+	static String listaAtribuicao = null;                                         // Variavel temporaria, util durante as traduçoes.
+	static A_I_ID_DERIV1 id_deriv1;                                               // Modelo de derivação, utilizado como variavel temporaria durante as traduções.
+	static ArrayList<SEQ_VAR> seqVar = new ArrayList();                           // Vetor global que armazena as declarações com seus tipos durante todo o escopo do código, esta informação é importante para descobrir o tipo das variaveis passadas como parâmetro durante o comando da transaction;
+
+	ArrayList<A_LIBRARIES> libraries;                                             // Lista contendo as bibliotecas do programa em C passado.
+	A_MAIN var_main;                                                              // Estrutura da função main.
+	ArrayList<A_FUNCTIONS> functions;                                             // Lista contendo as Funções do programa em C passado.
+
+	A_MINIC (){
+		contadorGlobal=0;                                                         
+	}
+
+	A_MINIC (ArrayList<A_LIBRARIES> libraries, A_MAIN var_main, ArrayList<A_FUNCTIONS> functions)
+	{
+		contadorGlobal=0;
+		this.libraries = libraries;
+		this.var_main = var_main;
+		this.functions = functions;
+	}
+}
+
+
+
+class A_LIBRARIES {                // Exemplo -> # include <stdio.h>
+	String cerquilha;              // #
+	String include;                // include
+	String menor;                  // <
+	String id;                     // nome da biblioteca passada no programa .h
+	String maior;                  // >
+
+	A_LIBRARIES (){}
+
+	A_LIBRARIES (String cerquilha, String include, String menor, String id, String maior)
+	{
+		this.cerquilha = cerquilha;
+		this.include= include;
+		this.menor = menor;
+		this.id= id;
+		this.maior = maior;
+	}
+}
+
+
+
+class A_MAIN {                      // Exemplo -> int main() { return 0; };
+	A_TYPE type;                    // Tipo -> int | float | char | double | void  
+	String main;                    // main
+	String aparenteses;             // (
+	String fparenteses;             // )
+	String achaves;                 // {
+	ArrayList<A_COMAND> comand;     // Aqui vai uma lista de comandos, como if, while, declarações, atribuições e ...
+	String fchaves;                 // }
+
+	A_MAIN (){}
+
+	A_MAIN (A_TYPE type, String main, String aparenteses, String fparenteses, String achaves, ArrayList<A_COMAND> comand, String fchaves)
+	{
+		this.type = type;
+		this.main = main;
+		this.aparenteses = aparenteses;
+		this.fparenteses = fparenteses;
+		this.achaves = achaves;
+		this.comand = comand;
+		this.fchaves = fchaves;
+	}
+}
+
+
+
+class A_FUNCTIONS {                        // Exemplo -> int soma(int a, int b) { return a+b; };
+	A_TYPE type;                           // Tipo -> int | float | char | double | void  
+	ArrayList<String> ponteiro;            // Uma lista de asteristos, permitindo ponteiro, ou ponteiro pra ponteiro -> *
+	String id;                             // Nome da função.
+	String aparenteses;                    // (
+	A_PARAMETERS parameters;               //  tipo nomeDaVariavel, tipo nomeDaVariavel, tipo nomeDaVariavel, ...
+	String fparenteses;                    // )
+	String achaves;                        // {
+	ArrayList<A_COMAND> comand;            // Aqui vai uma lista de comandos, como if, while, declarações, atribuições e ...
+	String fchaves;                        // }
+	
+
+	A_FUNCTIONS (){}
+
+	A_FUNCTIONS (A_TYPE type, ArrayList<String> ponteiro, String id, String aparenteses, A_PARAMETERS parameters, String fparenteses, String achaves, ArrayList<A_COMAND> comand, String fchaves)
+	{
+		this.type  = type;
+		this.ponteiro = ponteiro;
+		this.id = id;
+		this.aparenteses = aparenteses;
+		this.parameters = parameters;
+		this.fparenteses = fparenteses;
+		this.achaves = achaves;
+		this.comand = comand;
+		this.fchaves = fchaves;
+	}
+}
+
+
+
+class A_TYPE {}                          // Super Classe de tipo, que inclui as subclasses como: int, float e ...
+
+class A_TYPE1 extends A_TYPE{
+	String var_int;                      // Tipo 1 -> int
+
+	A_TYPE1 (){}
+
+	A_TYPE1 (String var_int)
+	{
+		this.var_int = var_int;
+	}
+}
+
+class A_TYPE2 extends A_TYPE{
+	String var_float;                   // Tipo 2 -> float
+
+	A_TYPE2 (){}
+
+	A_TYPE2 (String var_float)
+	{
+		this.var_float = var_float;
+	}
+}
+
+class A_TYPE3 extends  A_TYPE{
+	String var_char;                   // Tipo 3 -> char
+
+	A_TYPE3 (){}
+
+	A_TYPE3 (String var_char)
+	{
+		this.var_char = var_char;
+	}
+}
+
+class A_TYPE4 extends  A_TYPE{
+	String var_double;                 // Tipo 4 -> double
+
+	A_TYPE4 (){}
+
+	A_TYPE4 (String var_double)
+	{
+		this.var_double = var_double;
+	}
+}
+
+class A_TYPE5 extends  A_TYPE{
+	String var_void;                  // Tipo 5 -> void
+
+	A_TYPE5 (){}
+
+	A_TYPE5 (String var_void)
+	{
+		this.var_void = var_void;
+	}
+}
+
+
+
+class A_PARAMETERS {                               // Exemplo -> int a, int b, int c
+	A_TYPE type;                                   // Tipo -> int | float | char | double | void   
+	ArrayList<String> ponteiro;                    // Uma lista de asteristos, permitindo ponteiro, ou ponteiro pra ponteiro -> *
+	String id;                                     // Nome da Variavel 
+	ArrayList<A_PARAMETERS_REC> parameters_rec;    // Recursão, permite varios parametros: , int b, int c ...
+
+	A_PARAMETERS (){}
+
+	A_PARAMETERS (A_TYPE type, ArrayList<String> ponteiro, String id, ArrayList<A_PARAMETERS_REC> parameters_rec)
+	{
+		this.type = type;
+		this.ponteiro = ponteiro;
+		this.id = id;
+		this.parameters_rec = parameters_rec;
+	}
+}
+
+
+
+class A_PARAMETERS_REC {                        // Exemplo -> Recursão, permite varios parametros: , int b, int c ...
+	String virgula;                             // ,
+	A_TYPE type;                                // Tipo -> int | float | char | double | void 
+	ArrayList<String> ponteiro;                 // Uma lista de asteristos, permitindo ponteiro, ou ponteiro pra ponteiro -> *
+	String id;                                  // Nome da Variavel 
+
+	A_PARAMETERS_REC (){}
+
+	A_PARAMETERS_REC (String virgula, A_TYPE type, ArrayList<String> ponteiro, String id)
+	{
+		this.virgula = virgula;
+		this.type = type;
+		this.ponteiro = ponteiro;
+		this.id = id;
+	}
+}
+
+
+
+class A_COMAND {}                                     // Super Classe de Comando, que inclui as subclasses como: if, while, printf, atribuição e ...
+
+class A_COMAND1 extends  A_COMAND{                    // Comando de Declaração. Exemplo -> int *numero;  float digito; ...
+	A_TYPE type;                                      // Tipo -> int | float | char | double | void 
+	ArrayList<String> ponteiro;                       // Uma lista de asteristos, permitindo ponteiro, ou ponteiro pra ponteiro -> *
+	String id;                                        // Nome da Variavel 
+	String pontoevirgula;                             // ;
+
+	A_COMAND1 (){}
+
+	A_COMAND1 (A_TYPE type, ArrayList<String> ponteiro, String id, String pontoevirgula)
+	{
+		this.type = type;
+		this.ponteiro = ponteiro;
+		this.id = id;
+		this.pontoevirgula = pontoevirgula;
+	}
+}
+
+class A_COMAND2 extends  A_COMAND{                    // Comando base de atribuição e também de chamada de função. Exemplo -> variavel = 10; ou *variavel2 = 5 + 1; ou setMenu(int opcao); ...
+	A_POINTER_ADRESS_DERIV1 pointer_adress_deriv1;    // Permite varios ponteiros enderereço e varios ponteiros -> * ou *& ou *&* ...
+	String id;                                        // Nome da Variavel ou da função
+	A_I_ID_DERIV i_id_deriv;                          // Aqui ocorre a derivação para identificar se é atribuição ou chamada de função.
+	String pontoevirgula;                             // ;
+
+	A_COMAND2 (){}
+
+	A_COMAND2 (A_POINTER_ADRESS_DERIV1 pointer_adress_deriv1, String id, A_I_ID_DERIV i_id_deriv, String pontoevirgula)
+	{
+		this.pointer_adress_deriv1 = pointer_adress_deriv1;
+		this.id = id;
+		this.i_id_deriv = i_id_deriv;
+		this.pontoevirgula = pontoevirgula;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		boolean flag = true;
+		A_I_ID_DERIV1 i_id_deriv1;
+	
+		for(int i=0 ; i<declaracoes.size() ; i++){
+			if(id.equals(declaracoes.get(i))){
+				listaAtribuicao = global + id;
+				flag = false;
+			}
+		}
+
+		if(flag){
+			listaAtribuicao = id;
+		}
+		flag= false;
+
+		if (i_id_deriv instanceof A_I_ID_DERIV1){
+			i_id_deriv1 = (A_I_ID_DERIV1) i_id_deriv;
+			listaAtribuicao = listaAtribuicao + i_id_deriv1.getAtribuicao( declaracoes, global, tab);
+		}
+		listaAtribuicao = listaAtribuicao + pontoevirgula;
+		return listaAtribuicao;
+	}
+
+}
+
+class A_COMAND3 extends  A_COMAND{                    // Comando if. Exemplo -> if(a < b) { printf("teste");}
+	String var_if;                                    // if
+	String aparenteses;                               // (
+	A_EXPRESSION expression;                          // exemplo : a == b
+	String fparenteses;                               // )
+	String achaves;                                   // {
+	ArrayList<A_COMAND> comand;                       // Aqui vai uma lista de comandos, como if, while, declarações, atribuições e ...
+	String fchaves;                                   // }
+
+	A_COMAND3 (){}
+
+	A_COMAND3 (String var_if, String aparenteses, A_EXPRESSION expression, String fparenteses, String achaves, ArrayList<A_COMAND> comand, String fchaves)
+	{
+		this.var_if = var_if;
+		this.aparenteses = aparenteses;
+		this.expression = expression;
+		this.fparenteses = fparenteses;
+		this.achaves = achaves;
+		this.comand = comand;
+		this.fchaves = fchaves;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, PrintWriter gravar, String global, String tab){
+		String listaAtribuicao = "";
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		listaAtribuicao = var_if + aparenteses;
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			listaAtribuicao = listaAtribuicao + expression1.getAtribuicao(declaracoes, global, tab);
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			listaAtribuicao = listaAtribuicao + expression2.getAtribuicao(declaracoes, global, tab);
+		}
+
+		listaAtribuicao = listaAtribuicao + fparenteses + "\n";
+		listaAtribuicao = listaAtribuicao + tab + achaves + "\n";
+
+		return listaAtribuicao;
+	}
+
+}
+
+class A_COMAND4 extends  A_COMAND{             // Comando while. Exemplo -> while(a < b) { printf("teste");}
+	String var_while;                          // while
+	String aparenteses;                        // (
+	A_EXPRESSION expression;                   // exemplo : a == b
+	String fparenteses;                        // )
+	String achaves;                            // {
+	ArrayList<A_COMAND> comand;                // Aqui vai uma lista de comandos, como if, while, declarações, atribuições e ...
+	String fchaves;                            // }
+
+	A_COMAND4 (){}
+
+	A_COMAND4 (String var_while, String aparenteses, A_EXPRESSION expression, String fparenteses, String achaves, ArrayList<A_COMAND> comand, String fchaves)
+	{
+		this.var_while = var_while;
+		this.aparenteses = aparenteses;
+		this.expression = expression;
+		this.fparenteses = fparenteses;
+		this.achaves = achaves;
+		this.comand = comand;
+		this.fchaves = fchaves;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, PrintWriter gravar, String global, String tab){
+		String listaAtribuicao = "";
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		listaAtribuicao = var_while + aparenteses;
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			listaAtribuicao = listaAtribuicao + expression1.getAtribuicao(declaracoes, global, tab);
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			listaAtribuicao = listaAtribuicao + expression2.getAtribuicao(declaracoes, global, tab);
+		}
+
+		listaAtribuicao = listaAtribuicao + fparenteses + "\n";
+		listaAtribuicao = listaAtribuicao + tab + achaves + "\n";
+
+		return listaAtribuicao;
+	}
+}
+
+class A_COMAND5 extends  A_COMAND{               // Comando return. Exemplo -> return 0; ou return a; ou return 5+1; ...
+	String var_return;                           // return
+	A_EXPRESSION expression;                     // Uma expressão, como  a ou 5 ou a + 5 ...
+	String pontoevirgula;                        // ;
+
+	A_COMAND5 (){}
+
+	A_COMAND5 (String var_return, A_EXPRESSION expression, String pontoevirgula)
+	{
+		this.var_return = var_return;
+		this.expression = expression;
+		this.pontoevirgula = pontoevirgula;
+	}
+}
+
+class A_COMAND6 extends  A_COMAND{               // Comando printf. Exemplo -> printf("Numero %d", variavel);
+	String var_printf;                           // printf
+	String aparenteses;                          // (
+	String aaspas;                               // "
+	ArrayList<A_CHAR_WORDS> char_words;          // sequencia de caracteres
+	String faspas;                               // "
+	ArrayList<A_VAR_IN_OUT> var_in_out;          // , variavel ... aqui é referenciado as variaveis utilizadas na impressão.
+	String fparenteses;                          // )
+	String pontoevirgula;                        // ;
+
+	A_COMAND6 (){}
+
+	A_COMAND6 (String var_printf, String aparenteses, String aaspas, ArrayList<A_CHAR_WORDS> char_words, String faspas, ArrayList<A_VAR_IN_OUT> var_in_out, String fparenteses, String pontoevirgula)
+	{
+		this.var_printf = var_printf;
+		this.aparenteses = aparenteses;
+		this.aaspas = aaspas;
+		this.char_words = char_words;
+		this.faspas = faspas;
+		this.var_in_out = var_in_out;
+		this.fparenteses = fparenteses;
+		this.pontoevirgula = pontoevirgula;
+	}
+}
+
+class A_COMAND7 extends  A_COMAND{                  //  Instruções da clausula transaction. Exemplo -> // # pragma omp parallel transaction { printf("teste"); };      ou        // # pragma omp section transaction ( a:R ) { printf("teste"); };   ...  Aqui ocorre a derivação para os diferentes comandos da transaction.
+	String comentario;                              //  //
+	String cerquilha;                               //  #
+	String pragma;                                  //  pragma
+	String omp;                                     //  omp
+	A_CLAUSULA_TRANSACTION clausula_transaction;    //  aqui ocorre a derivação para os diferentes comandos da clausula transaction.
+
+	A_COMAND7 (){}
+
+	A_COMAND7 (String comentario, String cerquilha, String pragma, String omp, A_CLAUSULA_TRANSACTION clausula_transaction)
+	{
+		this.comentario = comentario;
+		this.cerquilha = cerquilha;
+		this.pragma = pragma;
+		this.omp = omp;
+		this.clausula_transaction = clausula_transaction;
+	}
+}
+
+
+
+class A_I_ID_DERIV {}                                   // Super classe, que tem atribuição e chamada de função como sub classe.
+
+class A_I_ID_DERIV1 extends  A_I_ID_DERIV{              // Derivação de atribuição. Exemplo -> = 5 + 1; ...
+	String atribuicao;                                  // =
+	A_EXPRESSION expression;                            // exemplo 5 + 1
+
+	A_I_ID_DERIV1 (){}
+
+	A_I_ID_DERIV1 (String atribuicao, A_EXPRESSION expression)
+	{
+		this.atribuicao = atribuicao;
+		this.expression = expression;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+	
+		listaAtribuicao = " " + atribuicao + " ";
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			listaAtribuicao = listaAtribuicao + expression1.getAtribuicao(declaracoes, global, tab);
+		}else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			listaAtribuicao = listaAtribuicao + expression2.getAtribuicao(declaracoes, global, tab);
+		}
+			return listaAtribuicao;
+	}
+}
+
+class A_I_ID_DERIV2 extends  A_I_ID_DERIV{                   // Derivação de função. Exemplo -> (a, b) ...
+	A_FUNCTIONS_ARGUMENTS functions_arguments;               // Aqui é chamada a estrutura que descreve os argumentos de uma função como por exemplo: (a, b, c) ...
+
+	A_I_ID_DERIV2 (){}
+
+	A_I_ID_DERIV2 (A_FUNCTIONS_ARGUMENTS functions_arguments)
+	{
+		this.functions_arguments = functions_arguments;
+	}
+}
+
+
+
+class A_FUNCTIONS_ARGUMENTS {                                // Argumentos de uma função. Exemplo -> (a, b) ...
+	String aparenteses;                                      // (
+	A_ARGUMENTS arguments;                                   // Estrutura que controla os argumentos Exemplo: a, b ...
+	String fparenteses;                                      // )
+
+	A_FUNCTIONS_ARGUMENTS (){}
+
+	A_FUNCTIONS_ARGUMENTS (String aparenteses, A_ARGUMENTS arguments, String fparenteses)
+	{
+		this.aparenteses = aparenteses;
+		this.arguments = arguments;
+		this.fparenteses = fparenteses;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = " ";
+		listaAtribuicao = aparenteses;
+
+		if(arguments != null){
+			listaAtribuicao = listaAtribuicao + arguments.getAtribuicao(declaracoes, global, tab);
+		}
+
+		listaAtribuicao = listaAtribuicao + fparenteses;
+
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_ARGUMENTS {                                         // Argumentos de uma função. Exemplo -> a, b, c+1 ...
+	A_EXPRESSION expression;                                // uma expressão -> x+1 ou a ou 1 ...
+	ArrayList<A_ARGUMENTS_REC> arguments_rec;               // expressão, expressão ... Aqui ocorre a recursão permitindo varias expressões.
+
+	A_ARGUMENTS (){}
+
+	A_ARGUMENTS (A_EXPRESSION expression, ArrayList<A_ARGUMENTS_REC> arguments_rec)
+	{
+		this.expression = expression;
+		this.arguments_rec = arguments_rec;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = " ";
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			listaAtribuicao = expression1.getAtribuicao(declaracoes, global, tab);
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			listaAtribuicao = expression2.getAtribuicao(declaracoes, global, tab);
+		}
+
+		for(int i=0 ; i<arguments_rec.size() ; i++){
+			listaAtribuicao = listaAtribuicao + arguments_rec.get(i).getAtribuicao(declaracoes, global, tab);
+		}
+
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_ARGUMENTS_REC {               // Argumentos de uma função. Exemplo -> a, b, c+1 ...
+	String virgula;                   // ,
+	A_EXPRESSION expression;          // uma expressão -> x+1 ou a ou 1 ...
+
+	A_ARGUMENTS_REC (){}
+
+	A_ARGUMENTS_REC (String virgula, A_EXPRESSION expression)
+	{
+		this.virgula = virgula;
+		this.expression = expression;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = " ";
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		listaAtribuicao = virgula;
+
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			listaAtribuicao = " " + listaAtribuicao + expression1.getAtribuicao(declaracoes, global, tab);
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			listaAtribuicao = " " + listaAtribuicao + expression2.getAtribuicao(declaracoes, global, tab);
+		}
+
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_OP {}                               // Super classe, que tem uma operação, onde as subclasses podem ser -> + ou - ou * ou / ou && ...
+
+class A_OP1 extends  A_OP{
+	String mais;                            // +
+
+	A_OP1 (){}
+
+	A_OP1 (String mais)
+	{
+		this.mais = mais;
+	}
+}
+
+class A_OP2 extends  A_OP{
+	String menos;                           // -
+
+	A_OP2 (){}
+
+	A_OP2 (String menos)
+	{
+		this.menos = menos;
+	}
+}
+
+class A_OP3 extends  A_OP{
+	String vezes;                          // *
+
+	A_OP3 (){}
+
+	A_OP3 (String vezes)
+	{
+		this.vezes = vezes;
+	}
+}
+
+class A_OP4 extends  A_OP{
+	String dividir;                        //  /
+
+	A_OP4 (){}
+
+	A_OP4 (String dividir)
+	{
+		this.dividir = dividir;
+	}
+}
+
+class A_OP5 extends  A_OP{
+	String e;                             // &&
+
+	A_OP5 (){}
+
+	A_OP5 (String e)
+	{
+		this.e = e;
+	}
+}
+
+class A_OP6 extends  A_OP{
+	String ou;                            // ||
+
+	A_OP6 (){}
+
+	A_OP6 (String ou)
+	{
+		this.ou = ou;
+	}
+}
+
+class A_OP7 extends  A_OP{
+	String menor;                         // <
+
+	A_OP7 (){}
+
+	A_OP7 (String menor)
+	{
+		this.menor = menor;
+	}
+}
+
+class A_OP8 extends  A_OP{
+	String maior;                        // >
+
+	A_OP8 (){}
+
+	A_OP8 (String maior)
+	{
+		this.maior = maior;
+	}
+}
+
+class A_OP9 extends  A_OP{
+	String igualdade;                    // ==
+
+	A_OP9 (){}
+
+	A_OP9 (String igualdade)
+	{
+		this.igualdade = igualdade;
+	}
+}
+
+class A_OP10 extends  A_OP{
+	String diferenca;                     // !=
+
+	A_OP10 (){}
+
+	A_OP10 (String diferenca)
+	{
+		this.diferenca = diferenca;
+	}
+}
+
+class A_OP11 extends  A_OP{
+	String maiorigual;                   // >=
+
+	A_OP11 (){}
+
+	A_OP11 (String maiorigual)
+	{
+		this.maiorigual = maiorigual;
+	}
+}
+
+class A_OP12 extends  A_OP{
+	String menorigual;                   // <=
+
+	A_OP12 (){}
+
+	A_OP12 (String menorigual)
+	{
+		this.menorigual = menorigual;
+	}
+}
+
+
+
+class A_EXPRESSION {}
+
+class A_EXPRESSION1 extends  A_EXPRESSION{
+	String aparenteses;
+	A_EXPRESSION expression;
+	String fparenteses;
+	A_EXPRESSION_OP expression_op;
+
+	A_EXPRESSION1 (){}
+
+	A_EXPRESSION1 (String aparenteses, A_EXPRESSION expression, String fparenteses, A_EXPRESSION_OP expression_op)
+	{
+		this.aparenteses = aparenteses;
+		this.expression = expression;
+		this.fparenteses = fparenteses;
+		this.expression_op = expression_op;
+	}
+
+	ArrayList<String> getDeclaracoes(ArrayList<String> lista){
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			lista = expression1.getDeclaracoes(lista);
+			//if(expression1.expression_op != null){
+				//lista = expression1.expression_op.getDeclaracoes(lista);
+			//}
+
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			lista = expression2.getDeclaracoes(lista);
+			//if(expression2.expression_op != null){
+				//lista = expression2.expression_op.getDeclaracoes(lista);
+			//}
+		}
+
+		if(expression_op != null){
+			lista = expression_op.getDeclaracoes(lista);
+		}
+
+		return lista;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+		
+		listaAtribuicao = aparenteses;
+		
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			listaAtribuicao = listaAtribuicao + expression1.getAtribuicao( declaracoes, global, tab);
+
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			listaAtribuicao = listaAtribuicao + expression2.getAtribuicao( declaracoes, global, tab);
+		}
+
+		listaAtribuicao = listaAtribuicao + fparenteses;
+
+		if(expression_op != null){
+			listaAtribuicao = listaAtribuicao + expression_op.getAtribuicao( declaracoes, global, tab);
+		}
+
+		return listaAtribuicao;
+	}
+
+}
+
+class A_EXPRESSION2 extends  A_EXPRESSION{
+	A_FACTOR factor;
+	A_EXPRESSION_OP expression_op;
+
+	A_EXPRESSION2 (){}
+
+	A_EXPRESSION2 (A_FACTOR factor, A_EXPRESSION_OP expression_op)
+	{
+		this.factor = factor;
+		this.expression_op = expression_op;
+	}
+
+	ArrayList<String> getDeclaracoes(ArrayList<String> lista){
+		A_FACTOR1 factor1;
+
+		if(factor instanceof A_FACTOR1){
+			factor1 = (A_FACTOR1) factor;
+			lista = factor1.getDeclaracoes(lista); 
+		}
+
+		if(expression_op != null){
+			lista = expression_op.getDeclaracoes(lista);
+		}
+
+		return lista;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		A_FACTOR1 factor1;
+		A_FACTOR2 factor2;
+		A_FACTOR3 factor3;
+		A_FACTOR4 factor4;
+		A_FACTOR5 factor5;
+
+		if(factor instanceof A_FACTOR1){
+			factor1 = (A_FACTOR1) factor;
+			listaAtribuicao = factor1.getAtribuicao( declaracoes, global, tab);
+		} else if(factor instanceof A_FACTOR2){
+			factor2 = (A_FACTOR2) factor;
+			listaAtribuicao = factor2.getAtribuicao( declaracoes, global, tab);
+		} else if(factor instanceof A_FACTOR3){
+			factor3 = (A_FACTOR3) factor;
+			listaAtribuicao = factor3.getAtribuicao( declaracoes, global, tab);
+		} else if(factor instanceof A_FACTOR4){
+			factor4 = (A_FACTOR4) factor;
+			listaAtribuicao = factor4.getAtribuicao( declaracoes, global, tab);
+		} else if(factor instanceof A_FACTOR5){
+			factor5 = (A_FACTOR5) factor;
+			listaAtribuicao = factor5.getAtribuicao( declaracoes, global, tab);
+		}
+
+		if(expression_op != null){
+			listaAtribuicao = listaAtribuicao + expression_op.getAtribuicao( declaracoes, global, tab);
+		}
+
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_EXPRESSION_OP {
+	A_OP op;
+	A_EXPRESSION expression;
+
+	A_EXPRESSION_OP (){}
+
+	A_EXPRESSION_OP (A_OP op, A_EXPRESSION expression)
+	{
+		this.op = op;
+		this.expression = expression;
+	}
+
+	ArrayList<String> getDeclaracoes(ArrayList<String> lista){
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			lista = expression1.getDeclaracoes(lista);
+
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			lista = expression2.getDeclaracoes(lista);
+		}
+		return lista;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+		A_OP1 op1;
+		A_OP2 op2;
+		A_OP3 op3;
+		A_OP4 op4;
+		A_OP5 op5;
+		A_OP6 op6;
+		A_OP7 op7;
+		A_OP8 op8;
+		A_OP9 op9;
+		A_OP10 op10;
+		A_OP11 op11;
+		A_OP12 op12;
+
+		if(op instanceof A_OP1){
+			op1 = (A_OP1) op;
+			listaAtribuicao = " " + op1.mais + " ";
+		} else if(op instanceof A_OP2){
+			op2 = (A_OP2) op;
+			listaAtribuicao = " " + op2.menos + " ";
+		} else if(op instanceof A_OP3){
+			op3 = (A_OP3) op;
+			listaAtribuicao = " " + op3.vezes + " ";
+		} else if(op instanceof A_OP4){
+			op4 = (A_OP4) op;
+			listaAtribuicao = " " + op4.dividir + " ";
+		} else if(op instanceof A_OP5){
+			op5 = (A_OP5) op;
+			listaAtribuicao = " " + op5.e + " ";
+		} else if(op instanceof A_OP6){
+			op6 = (A_OP6) op;
+			listaAtribuicao = " " + op6.ou + " ";
+		} else if(op instanceof A_OP7){
+			op7 = (A_OP7) op;
+			listaAtribuicao = " " + op7.menor + " ";
+		} else if(op instanceof A_OP8){
+			op8 = (A_OP8) op;
+			listaAtribuicao = " " + op8.maior + " ";
+		} else if(op instanceof A_OP9){
+			op9 = (A_OP9) op;
+			listaAtribuicao = " " + op9.igualdade + " ";
+		} else if(op instanceof A_OP10){
+			op10 = (A_OP10) op;
+			listaAtribuicao = " " + op10.diferenca + " ";
+		} else if(op instanceof A_OP11){
+			op11 = (A_OP11) op;
+			listaAtribuicao = " " + op11.maiorigual + " ";
+		} else if(op instanceof A_OP12){
+			op12 = (A_OP12) op;
+			listaAtribuicao = " " + op12.menorigual + " ";
+		}
+
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			listaAtribuicao = listaAtribuicao + expression1.getAtribuicao( declaracoes, global, tab);
+
+		} else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			listaAtribuicao = listaAtribuicao + expression2.getAtribuicao( declaracoes, global, tab);
+		}
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_POINTER_ADRESS {}
+
+class A_POINTER_ADRESS1 extends  A_POINTER_ADRESS{
+	A_POINTER_ADRESS_DERIV1 pointer_adress_deriv1;
+
+	A_POINTER_ADRESS1 (){}
+
+	A_POINTER_ADRESS1 (A_POINTER_ADRESS_DERIV1 pointer_adress_deriv1)
+	{
+		this.pointer_adress_deriv1 = pointer_adress_deriv1;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = pointer_adress_deriv1.getAtribuicao(declaracoes, global, tab);
+		return listaAtribuicao;
+	}
+
+}
+
+class A_POINTER_ADRESS2 extends  A_POINTER_ADRESS{
+	A_POINTER_ADRESS_DERIV2 pointer_adress_deriv2;
+
+	A_POINTER_ADRESS2 (){}
+
+	A_POINTER_ADRESS2 (A_POINTER_ADRESS_DERIV2 pointer_adress_deriv2)
+	{
+		this.pointer_adress_deriv2 = pointer_adress_deriv2;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = pointer_adress_deriv2.getAtribuicao(declaracoes, global, tab);
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_POINTER_ADRESS_DERIV1 {
+	ArrayList<String> ponteiro;
+	A_POINTER_ADRESS_DERIV2 pointer_adress_deriv2;
+
+	A_POINTER_ADRESS_DERIV1 (){}
+
+	A_POINTER_ADRESS_DERIV1 (ArrayList<String> ponteiro, A_POINTER_ADRESS_DERIV2 pointer_adress_deriv2)
+	{
+		this.ponteiro = ponteiro;
+		this.pointer_adress_deriv2 = pointer_adress_deriv2;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		for(int i=0 ; i< ponteiro.size() ; i++){
+			listaAtribuicao= listaAtribuicao + ponteiro.get(i);
+		}
+
+		if(pointer_adress_deriv2 != null){
+			listaAtribuicao= listaAtribuicao + pointer_adress_deriv2. getAtribuicao(declaracoes, global, tab);
+		}
+
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_POINTER_ADRESS_DERIV2 {
+	String ecomercial;
+	ArrayList<String> ponteiro;
+
+	A_POINTER_ADRESS_DERIV2 (){}
+
+	A_POINTER_ADRESS_DERIV2 (String ecomercial, ArrayList<String> ponteiro)
+	{
+		this.ecomercial = ecomercial;
+		this.ponteiro = ponteiro;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+
+		listaAtribuicao = ecomercial;
+
+		for(int i=0 ; i< ponteiro.size() ; i++){
+			listaAtribuicao= listaAtribuicao + ponteiro.get(i);
+		}
+
+		return listaAtribuicao;
+	}
+
+}
+
+
+
+class A_FACTOR {}
+
+class A_FACTOR1 extends  A_FACTOR{
+	A_POINTER_ADRESS pointer_adress;
+	String id;
+	A_FUNCTIONS_ARGUMENTS functions_arguments;
+
+	A_FACTOR1 (){}
+
+	A_FACTOR1 (A_POINTER_ADRESS pointer_adress, String id, A_FUNCTIONS_ARGUMENTS functions_arguments)
+	{
+		this.pointer_adress = pointer_adress;
+		this.id = id;
+		this.functions_arguments = functions_arguments;
+	}
+
+	ArrayList<String> getDeclaracoes(ArrayList<String> lista){
+		lista.add(id);
+		return lista;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		A_POINTER_ADRESS1 pointer_adress1;
+		A_POINTER_ADRESS2 pointer_adress2;
+		boolean flag = true;
+
+		if(pointer_adress != null){
+			if(pointer_adress instanceof A_POINTER_ADRESS1){
+				pointer_adress1 = (A_POINTER_ADRESS1) pointer_adress;
+				listaAtribuicao = pointer_adress1.getAtribuicao(declaracoes, global, tab);
+			} else if(pointer_adress instanceof A_POINTER_ADRESS2){
+				pointer_adress2 = (A_POINTER_ADRESS2) pointer_adress;
+				listaAtribuicao = pointer_adress2.getAtribuicao(declaracoes, global, tab);
+			}
+		}
+	
+		for(int i=0 ; i<declaracoes.size() ; i++){
+			if(id.equals(declaracoes.get(i))){
+				listaAtribuicao = listaAtribuicao + global + id;
+				flag = false;
+			}
+		}
+
+		if(flag){
+			listaAtribuicao =  listaAtribuicao + id;
+		}
+		flag= false;
+
+		if(functions_arguments != null){
+			listaAtribuicao =  listaAtribuicao + functions_arguments.getAtribuicao(declaracoes, global, tab);
+		}
+
+		return listaAtribuicao;
+	}
+
+}
+
+class A_FACTOR2 extends  A_FACTOR{
+	String digitos;
+
+	A_FACTOR2 (){}
+
+	A_FACTOR2 (String digitos)
+	{
+		this.digitos = digitos;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		listaAtribuicao = digitos;
+
+		return listaAtribuicao;
+	}
+}
+
+class A_FACTOR3 extends  A_FACTOR{
+	String digitosflutuantes;
+
+	A_FACTOR3 (){}
+
+	A_FACTOR3 (String digitosflutuantes)
+	{
+		this.digitosflutuantes = digitosflutuantes;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		listaAtribuicao = digitosflutuantes;
+
+		return listaAtribuicao;
+	}
+}
+
+class A_FACTOR4 extends  A_FACTOR{
+	String nulo;
+
+	A_FACTOR4 (){}
+
+	A_FACTOR4 (String nulo)
+	{
+		this.nulo = nulo;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = null;
+		listaAtribuicao = nulo;
+
+		return listaAtribuicao;
+	}
+}
+
+class A_FACTOR5 extends  A_FACTOR{
+	String aaspassimples;
+	A_CHAR_WORDS char_words;
+	String faspassimples;
+
+	A_FACTOR5 (){}
+
+	A_FACTOR5 (String aaspassimples, A_CHAR_WORDS char_words, String faspassimples)
+	{
+		this.aaspassimples = aaspassimples;
+		this.char_words = char_words;
+		this.faspassimples = faspassimples;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		A_CHAR_WORDS1 char_words1;
+		A_CHAR_WORDS2 char_words2;
+		A_CHAR_WORDS3 char_words3;
+		A_CHAR_WORDS4 char_words4;
+		A_CHAR_WORDS5 char_words5;
+		A_CHAR_WORDS6 char_words6;
+		A_CHAR_WORDS7 char_words7;
+		A_CHAR_WORDS8 char_words8;
+
+		String listaAtribuicao = "";
+
+		listaAtribuicao = aaspassimples;
+		if(char_words != null){
+			if(char_words instanceof A_CHAR_WORDS1){
+				char_words1 = (A_CHAR_WORDS1) char_words;
+				listaAtribuicao = listaAtribuicao + char_words1.getAtribuicao(declaracoes, global, tab);
+			} else if(char_words instanceof A_CHAR_WORDS2){
+				char_words2 = (A_CHAR_WORDS2) char_words;
+				listaAtribuicao = listaAtribuicao + char_words2.getAtribuicao(declaracoes, global, tab);
+			}else if(char_words instanceof A_CHAR_WORDS3){
+				char_words3 = (A_CHAR_WORDS3) char_words;
+				listaAtribuicao = listaAtribuicao + char_words3.getAtribuicao(declaracoes, global, tab);
+			}else if(char_words instanceof A_CHAR_WORDS4){
+				char_words4 = (A_CHAR_WORDS4) char_words;
+				listaAtribuicao = listaAtribuicao + char_words4.getAtribuicao(declaracoes, global, tab);
+			}else if(char_words instanceof A_CHAR_WORDS5){
+				char_words5 = (A_CHAR_WORDS5) char_words;
+				listaAtribuicao = listaAtribuicao + char_words5.getAtribuicao(declaracoes, global, tab);
+			}else if(char_words instanceof A_CHAR_WORDS6){
+				char_words6 = (A_CHAR_WORDS6) char_words;
+				listaAtribuicao = listaAtribuicao + char_words6.getAtribuicao(declaracoes, global, tab);
+			}else if(char_words instanceof A_CHAR_WORDS7){
+				char_words7 = (A_CHAR_WORDS7) char_words;
+				listaAtribuicao = listaAtribuicao + char_words7.getAtribuicao(declaracoes, global, tab);
+			}else if(char_words instanceof A_CHAR_WORDS8){
+				char_words8 = (A_CHAR_WORDS8) char_words;
+				listaAtribuicao = listaAtribuicao + char_words8.getAtribuicao(declaracoes, global, tab);
+			}
+
+		}
+		listaAtribuicao = listaAtribuicao + faspassimples;
+
+		return listaAtribuicao;
+	}
+}
+
+
+
+class A_CHAR_WORDS {}
+
+class A_CHAR_WORDS1 extends  A_CHAR_WORDS{
+	String id;
+
+	A_CHAR_WORDS1 (){}
+
+	A_CHAR_WORDS1 (String id)
+	{
+		this.id = id;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = id;
+		return listaAtribuicao;
+	}
+}
+
+class A_CHAR_WORDS2 extends  A_CHAR_WORDS{
+	String digitos;
+
+	A_CHAR_WORDS2 (){}
+
+	A_CHAR_WORDS2 (String digitos)
+	{
+		this.digitos = digitos;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = digitos;
+		return listaAtribuicao;
+	}
+}
+
+class A_CHAR_WORDS3 extends  A_CHAR_WORDS{
+	String digitosflutuantes;
+
+	A_CHAR_WORDS3 (){}
+
+	A_CHAR_WORDS3 (String digitosflutuantes)
+	{
+		this.digitosflutuantes = digitosflutuantes;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = digitosflutuantes;
+		return listaAtribuicao;
+	}
+}
+
+class A_CHAR_WORDS4 extends  A_CHAR_WORDS{
+	String porcento;
+
+	A_CHAR_WORDS4 (){}
+
+	A_CHAR_WORDS4 (String porcento)
+	{
+		this.porcento = porcento;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = porcento;
+		return listaAtribuicao;
+	}
+}
+
+class A_CHAR_WORDS5 extends  A_CHAR_WORDS{
+	String barrazero;
+
+	A_CHAR_WORDS5 (){}
+
+	A_CHAR_WORDS5 (String barrazero)
+	{
+		this.barrazero = barrazero;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = barrazero;
+		return listaAtribuicao;
+	}
+}
+
+class A_CHAR_WORDS6 extends  A_CHAR_WORDS{
+	String barran;
+
+	A_CHAR_WORDS6 (){}
+
+	A_CHAR_WORDS6 (String barran)
+	{
+		this.barran = barran;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = barran;
+		return listaAtribuicao;
+	}
+}
+
+class A_CHAR_WORDS7 extends  A_CHAR_WORDS{
+	String barrar;
+
+	A_CHAR_WORDS7 (){}
+
+	A_CHAR_WORDS7 (String barrar)
+	{
+		this.barrar = barrar;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = barrar;
+		return listaAtribuicao;
+	}
+}
+
+class A_CHAR_WORDS8 extends  A_CHAR_WORDS{
+	String barrat;
+
+	A_CHAR_WORDS8 (){}
+
+	A_CHAR_WORDS8 (String barrat)
+	{
+		this.barrat = barrat;
+	}
+
+	String getAtribuicao(ArrayList<String> declaracoes, String global, String tab){
+		String listaAtribuicao = "";
+		listaAtribuicao = barrat;
+		return listaAtribuicao;
+	}
+}
+
+
+
+class A_VAR_IN_OUT {
+	String virgula;
+	A_POINTER_ADRESS pointer_adress;
+	String id;
+
+	A_VAR_IN_OUT (){}
+
+	A_VAR_IN_OUT (String virgula, A_POINTER_ADRESS pointer_adress, String id)
+	{
+		this.virgula = virgula;
+		this.pointer_adress = pointer_adress;
+		this.id = id;
+	}
+}
+
+
+
+class A_CLAUSULA_TRANSACTION {}
+
+class A_CLAUSULA_TRANSACTION1 extends  A_CLAUSULA_TRANSACTION{
+	String parallel;
+	String transaction;
+	String achaves;
+	ArrayList<A_COMAND> comand;
+	String fchaves;
+
+	A_CLAUSULA_TRANSACTION1 (){}
+
+	A_CLAUSULA_TRANSACTION1 (String parallel, String transaction, String achaves, ArrayList<A_COMAND> comand, String fchaves)
+	{
+		this.parallel = parallel;
+		this.transaction = transaction;
+		this.achaves = achaves;
+		this.comand = comand;
+		this.fchaves = fchaves;
+	}
+}
+
+class A_CLAUSULA_TRANSACTION2 extends  A_CLAUSULA_TRANSACTION{
+	A_DIRETIVA diretiva;
+	String transaction;
+	String aparenteses;
+	A_TDECLIST tdeclist;
+	String fparenteses;
+	String achaves;
+	ArrayList<A_COMAND> comand;
+	String fchaves;
+
+	A_CLAUSULA_TRANSACTION2 (){}
+
+	A_CLAUSULA_TRANSACTION2 (A_DIRETIVA diretiva, String transaction, String aparenteses, A_TDECLIST tdeclist, String fparenteses, String achaves, ArrayList<A_COMAND> comand, String fchaves)
+	{
+		this.diretiva = diretiva;
+		this.transaction = transaction;
+		this.aparenteses = aparenteses;
+		this.tdeclist = tdeclist;
+		this.fparenteses = fparenteses;
+		this.achaves = achaves;
+		this.comand = comand;
+		this.fchaves = fchaves;
+	}
+
+	ArrayList<DECLARATIONS> getDeclaracoes(ArrayList<DECLARATIONS> lista){
+		if(tdeclist != null){
+			return tdeclist.getDeclaracoes(lista);
+		}else{
+			return lista;
+		}
+	}
+
+	//ArrayList<String> getDeclaracoes(ArrayList<String> lista){
+		//if(tdeclist != null){
+			//return tdeclist.getDeclaracoes(lista);
+		//}else{
+		//	return lista;
+		//}
+	//}
+
+}
+
+
+
+class A_DIRETIVA {}
+
+class A_DIRETIVA1 extends  A_DIRETIVA{
+	String section;
+
+	A_DIRETIVA1 (){}
+
+	A_DIRETIVA1 (String section)
+	{
+		this.section = section;
+	}
+}
+
+class A_DIRETIVA2 extends  A_DIRETIVA{
+	String var_for;
+
+	A_DIRETIVA2 (){}
+
+	A_DIRETIVA2 (String var_for)
+	{
+		this.var_for = var_for;
+	}
+}
+
+class A_DIRETIVA3 extends  A_DIRETIVA{
+	String task;
+
+	A_DIRETIVA3 (){}
+
+	A_DIRETIVA3 (String task)
+	{
+		this.task = task;
+	}
+}
+
+
+
+class A_TDECLIST {
+	A_TDEC tdec;
+	A_TDECLIST_REC tdeclist_rec;
+
+	A_TDECLIST (){}
+
+	A_TDECLIST (A_TDEC tdec, A_TDECLIST_REC tdeclist_rec)
+	{
+		this.tdec = tdec;
+		this.tdeclist_rec = tdeclist_rec;
+	}
+
+
+	ArrayList<DECLARATIONS> getDeclaracoes(ArrayList<DECLARATIONS> lista){
+		DECLARATIONS decTemp;
+		A_OPT1 opt1;
+		A_OPT2 opt2;
+		A_OPT3 opt3;
+
+		if(tdec != null){
+			if(tdec instanceof A_TDEC1){
+				A_TDEC1 tdec1;
+				tdec1 = (A_TDEC1) tdec;
+
+				if(tdec1.opt instanceof A_OPT1){
+					opt1 = (A_OPT1) tdec1.opt;
+					decTemp = new DECLARATIONS(opt1.R, tdec1.id);
+					lista.add(decTemp);
+
+				} else if(tdec1.opt instanceof A_OPT2){
+					opt2 = (A_OPT2) tdec1.opt;
+					decTemp = new DECLARATIONS(opt2.W, tdec1.id);
+					lista.add(decTemp);
+
+				} else if(tdec1.opt instanceof A_OPT3){
+					opt3 = (A_OPT3) tdec1.opt;
+					decTemp = new DECLARATIONS(opt3.RW, tdec1.id);
+					lista.add(decTemp);
+				}
+
+			} else if(tdec instanceof A_TDEC2){
+				A_TDEC2 tdec2;
+				tdec2 = (A_TDEC2) tdec;
+				decTemp = new DECLARATIONS("RW", tdec2.id);
+				lista.add(decTemp);
+			}
+
+			if(tdeclist_rec != null){
+				lista = tdeclist_rec.tdeclist.getDeclaracoes(lista);
+			}
+		}
+		return lista;
+	}
+
+
+	/*
+	ArrayList<String> getDeclaracoes(ArrayList<String> lista){
+		if(tdec != null){
+			if(tdec instanceof A_TDEC1){
+				A_TDEC1 tdec1;
+				tdec1 = (A_TDEC1) tdec;
+				lista.add(tdec1.id);
+			} else if(tdec instanceof A_TDEC2){
+				A_TDEC2 tdec2;
+				tdec2 = (A_TDEC2) tdec;
+				lista.add(tdec2.id);
+			}
+
+			if(tdeclist_rec != null){
+				lista = tdeclist_rec.tdeclist.getDeclaracoes(lista);
+			}
+		}
+		return lista;
+	}
+	*/
+
+}
+
+
+
+class A_TDECLIST_REC {
+	String virgula;
+	A_TDECLIST tdeclist;
+
+	A_TDECLIST_REC (){}
+
+	A_TDECLIST_REC (String virgula, A_TDECLIST tdeclist)
+	{
+		this.virgula = virgula;
+		this.tdeclist = tdeclist;
+	}
+}
+
+
+
+class A_TDEC {}
+
+class A_TDEC1 extends  A_TDEC{
+	A_OPT opt;
+	String doispontos;
+	String id;
+
+	A_TDEC1 (){}
+
+	A_TDEC1 (A_OPT opt, String doispontos, String id)
+	{
+		this.opt = opt;
+		this.doispontos = doispontos;
+		this.id = id;
+	}
+}
+
+class A_TDEC2 extends  A_TDEC{
+	String id;
+
+	A_TDEC2 (){}
+
+	A_TDEC2 (String id)
+	{
+		this.id = id;
+	}
+}
+
+
+
+class A_OPT {}
+
+class A_OPT1 extends  A_OPT{
+	String R;
+
+	A_OPT1 (){}
+
+	A_OPT1 (String R)
+	{
+		this.R = R;
+	}
+}
+
+class A_OPT2 extends  A_OPT{
+	String W;
+
+	A_OPT2 (){}
+
+	A_OPT2 (String W)
+	{
+		this.W = W;
+	}
+}
+
+class A_OPT3 extends  A_OPT{
+	String RW;
+
+	A_OPT3 (){}
+
+	A_OPT3 (String RW)
+	{
+		this.RW = RW;
+	}
+}
+
+class SEQ_VAR {
+	A_TYPE type;
+	String id;
+
+	SEQ_VAR (){
+		this.type = null;
+		this.id = null;
+	}
+
+	SEQ_VAR (A_TYPE type, String id)
+	{
+		this.type = type;
+		this.id = id;
+	}
+}
+
+class DECLARATIONS {
+	String acao;
+	String id;
+
+	DECLARATIONS (){
+		this.acao = null;
+		this.id = null;
+	}
+
+	DECLARATIONS (String acao, String id)
+	{
+		this.acao = acao;
+		this.id = id;
+	}
+}
+
+//==========================================================================================================
+
+public class MiniC {
+
+	public static void main(String args[]) throws ParseException,IOException {
+    	MiniC parser = new MiniC(new FileInputStream(args[0]));
+		A_MINIC arvoreMinic = parser.MiniC();
+	
+		// Criação do arquivo
+
+		PrintWriter gravar = new PrintWriter("saida.c");
+		PRINT_MINIC(arvoreMinic, gravar);
+		gravar.flush();
+		gravar.close();
+		
+		System.out.println("\nCompilado com Sucesso !");
+        System.out.println("O arquivo saida.c contendo o codigo compilado foi gerado.");
+  	}
+
+//============================================== IMPRESSAO ================================================
+
+
+public static void PRINT_MINIC(A_MINIC arvoreMinic,  PrintWriter gravar){
+	String tab = "";
+
+	if( arvoreMinic != null){
+		for(int i=0; i<arvoreMinic.libraries.size() ; i++){
+			PRINT_LIBRARIES(arvoreMinic.libraries.get(i), gravar);
+			gravar.println("");
+		}
+
+		gravar.println("");
+
+		PRINT_MAIN(arvoreMinic.var_main, gravar, tab);
+
+		gravar.println("");
+		gravar.println("");
+
+		for(int i=0; i<arvoreMinic.functions.size() ; i++){
+			PRINT_FUNCTIONS(arvoreMinic.functions.get(i), gravar, tab);
+			gravar.println("");
+			gravar.println("");
+		}
+	}
+}
+
+
+
+public static void PRINT_LIBRARIES(A_LIBRARIES libraries, PrintWriter gravar){
+	if( libraries != null){
+		gravar.print(libraries.cerquilha);
+		gravar.print(" ");
+		gravar.print(libraries.include);
+		gravar.print(" ");
+		gravar.print(libraries.menor);
+		gravar.print(libraries.id);
+		gravar.print(libraries.maior);
+	}
+}
+
+
+
+public static void PRINT_MAIN(A_MAIN main, PrintWriter gravar, String tab){
+	tab = tab + "\t";
+	SEQ_VAR seqVarTemp;
+	A_COMAND1 comand1;
+	int contadorDeDeclaracoes = 0;
+
+	if( main != null){
+		PRINT_TYPE(main.type, gravar);
+		gravar.print(" ");
+		gravar.print(main.main);
+		gravar.print(main.aparenteses);
+		gravar.print(main.fparenteses);
+		gravar.println("");
+		gravar.print(main.achaves);
+		gravar.println("");
+
+		for(int i=0; i<main.comand.size() ; i++){
+			gravar.print(tab);
+			if(main.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) main.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND(main.comand.get(i), gravar, tab);
+			gravar.println("");
+		}
+
+		gravar.print(main.fchaves);
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+}
+
+
+
+public static void PRINT_FUNCTIONS(A_FUNCTIONS functions, PrintWriter gravar, String tab){
+	tab = tab + "\t";
+	SEQ_VAR seqVarTemp;
+	A_COMAND1 comand1;
+	int contadorDeDeclaracoes = 0;
+
+	if( functions != null){
+		PRINT_TYPE(functions.type, gravar);
+
+		for(int i=0; i<functions.ponteiro.size() ; i++){
+			gravar.print("*");
+		}
+
+		gravar.print(" ");
+		gravar.print(functions.id);
+		gravar.print(functions.aparenteses);
+		PRINT_PARAMETERS(functions.parameters, gravar);
+		gravar.print(functions.fparenteses);
+		gravar.println("");
+		gravar.print(functions.achaves);
+		gravar.println("");
+
+		for(int i=0; i<functions.comand.size() ; i++){
+			gravar.print(tab);
+			if(functions.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) functions.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND(functions.comand.get(i), gravar, tab);
+			gravar.println("");
+		}
+
+		gravar.print(functions.fchaves);
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+}
+
+
+
+public static void PRINT_TYPE(A_TYPE type, PrintWriter gravar){
+	if( type != null){
+		A_TYPE1 type1;
+		A_TYPE2 type2;
+		A_TYPE3 type3;
+		A_TYPE4 type4;
+		A_TYPE5 type5;
+
+		if(type instanceof A_TYPE1){
+			type1 = (A_TYPE1) type;
+			PRINT_TYPE1(type1, gravar);
+
+		}else if(type instanceof A_TYPE2){
+			type2 = (A_TYPE2) type;
+			PRINT_TYPE2(type2, gravar);
+
+		}else if(type instanceof A_TYPE3){
+			type3 = (A_TYPE3) type;
+			PRINT_TYPE3(type3, gravar);
+
+		}else if(type instanceof A_TYPE4){
+			type4 = (A_TYPE4) type;
+			PRINT_TYPE4(type4, gravar);
+
+		}else if(type instanceof A_TYPE5){
+			type5 = (A_TYPE5) type;
+			PRINT_TYPE5(type5, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_TYPE1(A_TYPE1 type1, PrintWriter gravar){
+	if( type1 != null){
+		gravar.print(type1.var_int);
+	}
+}
+
+
+
+public static void PRINT_TYPE2(A_TYPE2 type2, PrintWriter gravar){
+	if( type2 != null){
+		gravar.print(type2.var_float);
+	}
+}
+
+
+
+public static void PRINT_TYPE3(A_TYPE3 type3, PrintWriter gravar){
+	if( type3 != null){
+		gravar.print(type3.var_char);
+	}
+}
+
+
+
+public static void PRINT_TYPE4(A_TYPE4 type4, PrintWriter gravar){
+	if( type4 != null){
+		gravar.print(type4.var_double);
+	}
+}
+
+
+
+public static void PRINT_TYPE5(A_TYPE5 type5, PrintWriter gravar){
+	if( type5 != null){
+		gravar.print(type5.var_void);
+	}
+}
+
+
+
+public static void PRINT_PARAMETERS(A_PARAMETERS parameters, PrintWriter gravar){
+	if( parameters != null){
+		PRINT_TYPE(parameters.type, gravar);
+		gravar.print(" ");
+
+		for(int i=0; i<parameters.ponteiro.size() ; i++){
+			gravar.print("*");
+		}
+
+		gravar.print(parameters.id);
+
+		for(int i=0; i<parameters.parameters_rec.size() ; i++){
+			PRINT_PARAMETERS_REC(parameters.parameters_rec.get(i), gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_PARAMETERS_REC(A_PARAMETERS_REC parameters_rec, PrintWriter gravar){
+	if( parameters_rec != null){
+		gravar.print(parameters_rec.virgula);
+		gravar.print(" ");
+
+		PRINT_TYPE(parameters_rec.type, gravar);
+		gravar.print(" ");
+
+		for(int i=0; i<parameters_rec.ponteiro.size() ; i++){
+			gravar.print("*");
+		}
+
+		gravar.print(parameters_rec.id);
+	}
+}
+
+
+
+public static void PRINT_COMAND(A_COMAND comand, PrintWriter gravar, String tab){
+	if( comand != null){
+		A_COMAND1 comand1;
+		A_COMAND2 comand2;
+		A_COMAND3 comand3;
+		A_COMAND4 comand4;
+		A_COMAND5 comand5;
+		A_COMAND6 comand6;
+		A_COMAND7 comand7;
+
+		if(comand instanceof A_COMAND1){
+			comand1 = (A_COMAND1) comand;
+			PRINT_COMAND1(comand1, gravar);
+
+		}else if(comand instanceof A_COMAND2){
+			comand2 = (A_COMAND2) comand;
+			PRINT_COMAND2(comand2, gravar);
+
+		}else if(comand instanceof A_COMAND3){
+			comand3 = (A_COMAND3) comand;
+			PRINT_COMAND3(comand3, gravar, tab);
+
+		}else if(comand instanceof A_COMAND4){
+			comand4 = (A_COMAND4) comand;
+			PRINT_COMAND4(comand4, gravar, tab);
+
+		}else if(comand instanceof A_COMAND5){
+			comand5 = (A_COMAND5) comand;
+			PRINT_COMAND5(comand5, gravar);
+
+		}else if(comand instanceof A_COMAND6){
+			comand6 = (A_COMAND6) comand;
+			PRINT_COMAND6(comand6, gravar);
+
+		}else if(comand instanceof A_COMAND7){
+			comand7 = (A_COMAND7) comand;
+			PRINT_COMAND7(comand7, gravar, tab);
+		}
+	}
+}
+
+
+
+public static void PRINT_COMAND1(A_COMAND1 comand1, PrintWriter gravar){
+	if( comand1 != null){
+		PRINT_TYPE(comand1.type, gravar);
+		gravar.print(" ");
+
+		for(int i=0; i<comand1.ponteiro.size() ; i++){
+			gravar.print("*");
+		}
+
+		gravar.print(comand1.id);
+		gravar.print(comand1.pontoevirgula);
+	}
+}
+
+
+
+public static void PRINT_COMAND2(A_COMAND2 comand2, PrintWriter gravar){
+	if( comand2 != null){
+		PRINT_POINTER_ADRESS_DERIV1(comand2.pointer_adress_deriv1, gravar);
+		gravar.print(comand2.id);
+		PRINT_I_ID_DERIV(comand2.i_id_deriv, gravar);
+		gravar.print(comand2.pontoevirgula);
+	}
+}
+
+
+
+public static void PRINT_COMAND3(A_COMAND3 comand3, PrintWriter gravar, String tab){
+	String tabTemp = tab;
+	tab = tab + "\t";
+	SEQ_VAR seqVarTemp;
+	A_COMAND1 comand1;
+
+	int contadorDeDeclaracoes = 0;
+
+	if( comand3 != null){
+		gravar.println("");
+		gravar.print(tabTemp + comand3.var_if);
+		gravar.print(" ");
+		gravar.print(comand3.aparenteses);
+		PRINT_EXPRESSION(comand3.expression, gravar);
+		gravar.print(comand3.fparenteses);
+		gravar.println("");
+		gravar.print(tabTemp + comand3.achaves);
+		gravar.println("");
+
+
+		for(int i=0; i<comand3.comand.size() ; i++){
+			gravar.print(tab);
+			if(comand3.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) comand3.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND(comand3.comand.get(i), gravar, tab);
+			gravar.println("");
+		}
+
+		gravar.print(tabTemp + comand3.fchaves);
+		gravar.println("");
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+}
+
+
+
+public static void PRINT_COMAND4(A_COMAND4 comand4, PrintWriter gravar, String tab){
+	String tabTemp = tab;
+	tab = tab + "\t";
+	SEQ_VAR seqVarTemp;
+	A_COMAND1 comand1;
+
+	int contadorDeDeclaracoes = 0;
+
+	if( comand4 != null){
+		gravar.println("");
+		gravar.print(tabTemp + comand4.var_while);
+		gravar.print(" ");
+		gravar.print(comand4.aparenteses);
+		PRINT_EXPRESSION(comand4.expression, gravar);
+		gravar.print(comand4.fparenteses);
+		gravar.println("");
+		gravar.print(tabTemp + comand4.achaves);
+		gravar.println("");
+
+		for(int i=0; i<comand4.comand.size() ; i++){
+			gravar.print(tab);
+			if(comand4.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) comand4.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND(comand4.comand.get(i), gravar, tab);
+			gravar.println("");
+		}
+
+		gravar.print(tabTemp + comand4.fchaves);
+		gravar.println("");
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+}
+
+
+
+public static void PRINT_COMAND5(A_COMAND5 comand5, PrintWriter gravar){
+	if( comand5 != null){
+		gravar.print(comand5.var_return);
+		gravar.print(" ");
+		PRINT_EXPRESSION(comand5.expression, gravar);
+		gravar.print(comand5.pontoevirgula);
+	}
+}
+
+
+
+public static void PRINT_COMAND6(A_COMAND6 comand6, PrintWriter gravar){
+	if( comand6 != null){
+		gravar.print(comand6.var_printf);
+		gravar.print(comand6.aparenteses);
+		gravar.print(comand6.aaspas);
+
+		for(int i=0; i<comand6.char_words.size() ; i++){
+			PRINT_CHAR_WORDS(comand6.char_words.get(i), gravar);
+		}
+
+		gravar.print(comand6.faspas);
+
+		for(int i=0; i<comand6.var_in_out.size() ; i++){
+			PRINT_VAR_IN_OUT(comand6.var_in_out.get(i), gravar);
+		}
+
+		gravar.print(comand6.fparenteses);
+		gravar.print(comand6.pontoevirgula);
+	}
+}
+
+
+
+public static void PRINT_COMAND7(A_COMAND7 comand7, PrintWriter gravar, String tab){
+	if( comand7 != null){
+		gravar.println();
+		gravar.print(tab);
+		if(comand7.comentario != null){
+			gravar.print(comand7.comentario);
+			gravar.print(" ");
+		}
+		gravar.print(comand7.cerquilha);
+		gravar.print(" ");
+		gravar.print(comand7.pragma);
+		gravar.print(" ");
+		gravar.print(comand7.omp);
+		gravar.print(" ");
+		PRINT_CLAUSULA_TRANSACTION(comand7.clausula_transaction, gravar, tab);
+	}
+}
+
+
+
+public static void PRINT_COMAND_TRANSACTION(A_COMAND comand, PrintWriter gravar, String tab, String numeroGlobal, ArrayList<String> declaracoes){
+	if( comand != null){
+		A_MINIC.direitaDaAtribuicao.clear();
+		A_MINIC.direitaDaAtribuicaoSemRepeticao.clear();
+		A_MINIC.listaAtribuicao = "";
+
+		A_COMAND1 comand1;
+		A_COMAND2 comand2;
+		A_COMAND3 comand3;
+		A_COMAND4 comand4;
+		A_COMAND5 comand5;
+		A_COMAND6 comand6;
+		A_COMAND7 comand7;
+
+		if(comand instanceof A_COMAND1){
+			comand1 = (A_COMAND1) comand;
+			PRINT_COMAND1_TRANSACTION(comand1, gravar, tab);
+
+		}else if(comand instanceof A_COMAND2){
+			comand2 = (A_COMAND2) comand;
+			PRINT_COMAND2_TRANSACTION(comand2, gravar, tab, numeroGlobal, declaracoes);
+
+		}else if(comand instanceof A_COMAND3){
+			comand3 = (A_COMAND3) comand;
+			PRINT_COMAND3_TRANSACTION(comand3, gravar, tab, numeroGlobal, declaracoes);
+
+		}else if(comand instanceof A_COMAND4){
+			comand4 = (A_COMAND4) comand;
+			PRINT_COMAND4_TRANSACTION(comand4, gravar, tab, numeroGlobal, declaracoes);
+
+		}else if(comand instanceof A_COMAND5){
+			comand5 = (A_COMAND5) comand;
+			PRINT_COMAND5_TRANSACTION(comand5, gravar, tab);
+
+		}else if(comand instanceof A_COMAND6){
+			comand6 = (A_COMAND6) comand;
+			PRINT_COMAND6_TRANSACTION(comand6, gravar, tab);
+
+		}else if(comand instanceof A_COMAND7){
+			comand7 = (A_COMAND7) comand;
+			PRINT_COMAND7_TRANSACTION(comand7, gravar, tab);
+		}
+	}
+}
+
+
+
+public static void PRINT_COMAND1_TRANSACTION(A_COMAND1 comand1, PrintWriter gravar, String tab){
+
+	if( comand1 != null){
+		gravar.print(tab);
+
+		PRINT_TYPE(comand1.type, gravar);
+		gravar.print(" ");
+
+		for(int i=0; i<comand1.ponteiro.size() ; i++){
+			gravar.print("*");
+		}
+
+		gravar.print(comand1.id);
+		gravar.print(comand1.pontoevirgula);
+	}
+}
+
+
+
+public static void PRINT_COMAND2_TRANSACTION(A_COMAND2 comand2, PrintWriter gravar, String tab, String numeroGlobal, ArrayList<String> declaracoes){
+	
+	
+	if( comand2 != null){
+		PRINT_I_ID_DERIV_TRANSACTION(comand2.i_id_deriv, gravar, tab, numeroGlobal, declaracoes);
+
+		// atribuicao modificada 
+		A_MINIC.listaAtribuicao = comand2.getAtribuicao(declaracoes, numeroGlobal, tab);
+		gravar.println(tab + A_MINIC.listaAtribuicao);
+
+		// aqui nesta linha, testar se o lado esquerdo da atribuicao esta nas declaracoes.
+		PRINT_POINTER_ADRESS_DERIV1(comand2.pointer_adress_deriv1, gravar);
+
+		for(int j=0 ; j<declaracoes.size() ; j++){
+			if(comand2.id.equals(declaracoes.get(j))){
+				gravar.print(tab + "vtm_write(" + numeroGlobal + "tm, &" + comand2.id + ", &" + numeroGlobal + comand2.id + ");");
+			}
+		}
+		gravar.println();
+	}
+	
+
+	/*
+	if( comand2 != null){
+		gravar.print(tab);
+		PRINT_POINTER_ADRESS_DERIV1(comand2.pointer_adress_deriv1, gravar);
+		gravar.print(comand2.id);
+		PRINT_I_ID_DERIV_TRANSACTION(comand2.i_id_deriv, gravar, tab, numeroGlobal, declaracoes);
+		gravar.print(comand2.pontoevirgula);
+	}
+	*/
+
+}
+
+
+
+public static void PRINT_COMAND3_TRANSACTION(A_COMAND3 comand3, PrintWriter gravar, String tab, String numeroGlobal, ArrayList<String> declaracoes){
+	
+	A_EXPRESSION1 expression1;
+	A_EXPRESSION2 expression2;
+	String tempTab;
+	SEQ_VAR seqVarTemp;
+	A_COMAND1 comand1;
+
+	int contadorDeDeclaracoes = 0;
+
+	if( comand3 != null){
+		
+		if(comand3.expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) comand3.expression;
+			A_MINIC.direitaDaAtribuicao = expression1.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+		}else if(comand3.expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) comand3.expression;
+			A_MINIC.direitaDaAtribuicao = expression2.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+		}
+
+
+
+		// removendo as repeticoes de expressoes a direita da atribuicao.
+		for(int j=0 ; j<A_MINIC.direitaDaAtribuicao.size() ; j++){ 
+			if(!A_MINIC.direitaDaAtribuicaoSemRepeticao.contains(A_MINIC.direitaDaAtribuicao.get(j))){
+				A_MINIC.direitaDaAtribuicaoSemRepeticao.add(A_MINIC.direitaDaAtribuicao.get(j));
+			}
+		}
+
+		gravar.println();
+
+		// lendo variaveis de memoria transacional		
+		for(int j=0 ; j<A_MINIC.direitaDaAtribuicaoSemRepeticao.size() ; j++){
+			for(int k=0 ; k<declaracoes.size() ; k++){
+				if(A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j).equals(declaracoes.get(k))){
+					gravar.println(tab + "vtm_read(" + numeroGlobal + "tm, &" + A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j) + ", &" + numeroGlobal + A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j) + ");");
+				}
+			}
+		}
+
+		// atribuicao modificada 
+		A_MINIC.listaAtribuicao = comand3.getAtribuicao(declaracoes, gravar, numeroGlobal, tab);
+		gravar.print(tab + A_MINIC.listaAtribuicao);
+		tempTab = tab + "\t";
+		for(int i = 0 ; i<comand3.comand.size() ; i++){
+			if(comand3.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) comand3.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND_TRANSACTION(comand3.comand.get(i), gravar, tempTab, numeroGlobal, declaracoes);
+			gravar.println();
+		}
+		gravar.println(tab +comand3.fchaves);
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+	
+
+	
+	
+	/*
+	String tabTemp = tab;
+	tab = tab + "\t";
+
+	if( comand3 != null){
+		gravar.println("");
+		gravar.print(tabTemp + comand3.var_if);
+		gravar.print(" ");
+		gravar.print(comand3.aparenteses);
+		PRINT_EXPRESSION(comand3.expression, gravar);
+		gravar.println(comand3.fparenteses);
+		gravar.println(tabTemp + comand3.achaves);
+
+
+		for(int i=0; i<comand3.comand.size() ; i++){
+			PRINT_COMAND_TRANSACTION(comand3.comand.get(i), gravar, tab, numeroGlobal, declaracoes);
+			gravar.println("");
+		}
+
+		gravar.println(tabTemp + comand3.fchaves);
+	}
+	*/
+
+}
+
+
+
+public static void PRINT_COMAND4_TRANSACTION(A_COMAND4 comand4, PrintWriter gravar, String tab, String numeroGlobal, ArrayList<String> declaracoes){
+	
+	String tempTab;
+	A_EXPRESSION1 expression1;
+	A_EXPRESSION2 expression2;
+	SEQ_VAR seqVarTemp;
+	A_COMAND1 comand1;
+
+	int contadorDeDeclaracoes = 0;
+
+	if( comand4 != null){
+
+		if(comand4.expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) comand4.expression;
+			A_MINIC.direitaDaAtribuicao = expression1.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+		}else if(comand4.expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) comand4.expression;
+			A_MINIC.direitaDaAtribuicao = expression2.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+		}
+
+		// removendo as repeticoes de expressoes a direita da atribuicao.
+		for(int j=0 ; j<A_MINIC.direitaDaAtribuicao.size() ; j++){ 
+			if(!A_MINIC.direitaDaAtribuicaoSemRepeticao.contains(A_MINIC.direitaDaAtribuicao.get(j))){
+				A_MINIC.direitaDaAtribuicaoSemRepeticao.add(A_MINIC.direitaDaAtribuicao.get(j));
+			}
+		}
+
+		gravar.println();
+
+		// lendo variaveis de memoria transacional		
+		for(int j=0 ; j<A_MINIC.direitaDaAtribuicaoSemRepeticao.size() ; j++){
+			for(int k=0 ; k<declaracoes.size() ; k++){
+				if(A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j).equals(declaracoes.get(k))){
+					gravar.println(tab + "vtm_read(" + numeroGlobal + "tm, &" + A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j) + ", &" + numeroGlobal + A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j) + ");");
+				}
+			}
+		}
+
+		// atribuicao modificada 
+		A_MINIC.listaAtribuicao = comand4.getAtribuicao(declaracoes, gravar, numeroGlobal, tab);
+		gravar.print(tab + A_MINIC.listaAtribuicao);
+		tempTab = tab + "\t";
+		for(int i = 0 ; i<comand4.comand.size() ; i++){
+			if(comand4.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) comand4.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND_TRANSACTION(comand4.comand.get(i), gravar, tempTab, numeroGlobal, declaracoes);
+			gravar.println();
+		}
+		gravar.println(tab +comand4.fchaves);
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+	
+	
+	/*
+	String tabTemp = tab;
+	tab = tab + "\t";
+
+	if( comand4 != null){
+		gravar.println("");
+		gravar.print(tabTemp + comand4.var_while);
+		gravar.print(" ");
+		gravar.print(comand4.aparenteses);
+		PRINT_EXPRESSION(comand4.expression, gravar);
+		gravar.println(comand4.fparenteses);
+		gravar.println(tabTemp + comand4.achaves);
+
+		for(int i=0; i<comand4.comand.size() ; i++){
+			PRINT_COMAND_TRANSACTION(comand4.comand.get(i), gravar, tab, numeroGlobal, declaracoes);
+			gravar.println("");
+		}
+
+		gravar.println(tabTemp + comand4.fchaves);
+	}
+	*/
+	
+}
+
+
+
+public static void PRINT_COMAND5_TRANSACTION(A_COMAND5 comand5, PrintWriter gravar, String tab){
+	if( comand5 != null){
+		gravar.print(tab);
+		gravar.print(comand5.var_return);
+		gravar.print(" ");
+		PRINT_EXPRESSION(comand5.expression, gravar);
+		gravar.print(comand5.pontoevirgula);
+	}
+}
+
+
+
+public static void PRINT_COMAND6_TRANSACTION(A_COMAND6 comand6, PrintWriter gravar, String tab){
+	if( comand6 != null){
+		gravar.print(tab);
+		gravar.print(comand6.var_printf);
+		gravar.print(comand6.aparenteses);
+		gravar.print(comand6.aaspas);
+
+		for(int i=0; i<comand6.char_words.size() ; i++){
+			PRINT_CHAR_WORDS(comand6.char_words.get(i), gravar);
+		}
+
+		gravar.print(comand6.faspas);
+
+		for(int i=0; i<comand6.var_in_out.size() ; i++){
+			PRINT_VAR_IN_OUT(comand6.var_in_out.get(i), gravar);
+		}
+
+		gravar.print(comand6.fparenteses);
+		gravar.print(comand6.pontoevirgula);
+	}
+}
+
+
+
+public static void PRINT_COMAND7_TRANSACTION(A_COMAND7 comand7, PrintWriter gravar, String tab){
+	if( comand7 != null){
+		gravar.println("");
+		gravar.print(tab + comand7.comentario);
+		gravar.print(" ");
+		gravar.print(comand7.cerquilha);
+		gravar.print(" ");
+		gravar.print(comand7.pragma);
+		gravar.print(" ");
+		gravar.print(comand7.omp);
+		gravar.print(" ");
+		PRINT_CLAUSULA_TRANSACTION(comand7.clausula_transaction, gravar, tab);
+	}
+}
+
+
+
+public static void PRINT_I_ID_DERIV_TRANSACTION(A_I_ID_DERIV i_id_deriv, PrintWriter gravar, String tab, String numeroGlobal, ArrayList<String> declaracoes){
+	
+	if( i_id_deriv != null){
+		A_I_ID_DERIV1 i_id_deriv1;
+		A_I_ID_DERIV2 i_id_deriv2;
+
+		if(i_id_deriv instanceof A_I_ID_DERIV1){
+			i_id_deriv1 = (A_I_ID_DERIV1)  i_id_deriv;
+			PRINT_I_ID_DERIV1_TRANSACTION(i_id_deriv1, gravar, tab, numeroGlobal, declaracoes);
+
+		}else if(i_id_deriv instanceof A_I_ID_DERIV2){
+			i_id_deriv2 = (A_I_ID_DERIV2)  i_id_deriv;
+			PRINT_I_ID_DERIV2(i_id_deriv2, gravar);
+		}
+	}
+
+}
+
+
+
+public static void PRINT_I_ID_DERIV1_TRANSACTION(A_I_ID_DERIV1 i_id_deriv1, PrintWriter gravar, String tab, String numeroGlobal, ArrayList<String> declaracoes){
+	
+	A_EXPRESSION1 expression1;
+	A_EXPRESSION2 expression2;
+
+	if( i_id_deriv1 != null){
+
+		// aqui nesta linha, testar se o lado direito da atribuicao esta nas declaracoes.
+		if(i_id_deriv1.expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) i_id_deriv1.expression;
+			A_MINIC.direitaDaAtribuicao = expression1.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+		}else if(i_id_deriv1.expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) i_id_deriv1.expression;
+			A_MINIC.direitaDaAtribuicao = expression2.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+		}
+
+		// removendo as repeticoes de expressoes a direita da atribuicao.
+		for(int j=0 ; j<A_MINIC.direitaDaAtribuicao.size() ; j++){ 
+			if(!A_MINIC.direitaDaAtribuicaoSemRepeticao.contains(A_MINIC.direitaDaAtribuicao.get(j))){
+				A_MINIC.direitaDaAtribuicaoSemRepeticao.add(A_MINIC.direitaDaAtribuicao.get(j));
+			}
+		}
+
+		// lendo variaveis de memoria transacional		
+		gravar.println();
+		for(int j=0 ; j<A_MINIC.direitaDaAtribuicaoSemRepeticao.size() ; j++){
+			for(int k=0 ; k<declaracoes.size() ; k++){
+				if(A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j).equals(declaracoes.get(k))){
+					gravar.println(tab + "vtm_read(" + numeroGlobal + "tm, &" + A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j) + ", &" + numeroGlobal + A_MINIC.direitaDaAtribuicaoSemRepeticao.get(j) + ");");
+				}
+			}
+		}
+	}
+	
+
+
+	/*
+	if( i_id_deriv1 != null){
+		gravar.print(" ");
+		gravar.print(i_id_deriv1.atribuicao);
+		gravar.print(" ");
+		PRINT_EXPRESSION(i_id_deriv1.expression, gravar);
+	}
+	*/
+
+}
+
+
+
+public static void PRINT_I_ID_DERIV(A_I_ID_DERIV i_id_deriv, PrintWriter gravar){
+	if( i_id_deriv != null){
+		A_I_ID_DERIV1 i_id_deriv1;
+		A_I_ID_DERIV2 i_id_deriv2;
+
+		if(i_id_deriv instanceof A_I_ID_DERIV1){
+			i_id_deriv1 = (A_I_ID_DERIV1)  i_id_deriv;
+			PRINT_I_ID_DERIV1(i_id_deriv1, gravar);
+
+		}else if(i_id_deriv instanceof A_I_ID_DERIV2){
+			i_id_deriv2 = (A_I_ID_DERIV2)  i_id_deriv;
+			PRINT_I_ID_DERIV2(i_id_deriv2, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_I_ID_DERIV1(A_I_ID_DERIV1 i_id_deriv1, PrintWriter gravar){
+	if( i_id_deriv1 != null){
+		gravar.print(" ");
+		gravar.print(i_id_deriv1.atribuicao);
+		gravar.print(" ");
+		PRINT_EXPRESSION(i_id_deriv1.expression, gravar);
+	}
+}
+
+
+
+public static void PRINT_I_ID_DERIV2(A_I_ID_DERIV2 i_id_deriv2, PrintWriter gravar){
+	if( i_id_deriv2 != null){
+		PRINT_FUNCTIONS_ARGUMENTS(i_id_deriv2.functions_arguments, gravar);
+	}
+}
+
+
+
+public static void PRINT_FUNCTIONS_ARGUMENTS(A_FUNCTIONS_ARGUMENTS functions_arguments, PrintWriter gravar){
+	if( functions_arguments != null){
+		gravar.print(functions_arguments.aparenteses);
+		PRINT_ARGUMENTS(functions_arguments.arguments, gravar);
+		gravar.print(functions_arguments.fparenteses);
+	}
+}
+
+
+
+public static void PRINT_FUNCTIONS_ARGUMENTS_TRANSACTION(A_FUNCTIONS_ARGUMENTS functions_arguments, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( functions_arguments != null){
+		gravar.print(functions_arguments.aparenteses);
+		PRINT_ARGUMENTS_TRANSACTION(functions_arguments.arguments, gravar, numeroGlobal, declaracoes);
+		gravar.print(functions_arguments.fparenteses);
+	}
+}
+
+
+
+public static void PRINT_ARGUMENTS(A_ARGUMENTS arguments, PrintWriter gravar){
+	if( arguments != null){
+		PRINT_EXPRESSION(arguments.expression, gravar);
+
+		for(int i=0; i<arguments.arguments_rec.size() ; i++){
+			PRINT_ARGUMENTS_REC(arguments.arguments_rec.get(i), gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_ARGUMENTS_TRANSACTION(A_ARGUMENTS arguments, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( arguments != null){
+		PRINT_EXPRESSION_TRANSACTION(arguments.expression, gravar, numeroGlobal, declaracoes);
+
+		for(int i=0; i<arguments.arguments_rec.size() ; i++){
+			PRINT_ARGUMENTS_REC_TRANSACTION(arguments.arguments_rec.get(i), gravar, numeroGlobal, declaracoes);
+		}
+	}
+}
+
+
+
+public static void PRINT_ARGUMENTS_REC(A_ARGUMENTS_REC arguments_rec, PrintWriter gravar){
+	if( arguments_rec != null){
+		gravar.print(arguments_rec.virgula);
+		gravar.print(" ");
+		PRINT_EXPRESSION(arguments_rec.expression, gravar);
+	}
+}
+
+
+
+public static void PRINT_ARGUMENTS_REC_TRANSACTION(A_ARGUMENTS_REC arguments_rec, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( arguments_rec != null){
+		gravar.print(arguments_rec.virgula);
+		gravar.print(" ");
+		PRINT_EXPRESSION_TRANSACTION(arguments_rec.expression, gravar, numeroGlobal, declaracoes);
+	}
+}
+
+
+
+public static void PRINT_OP(A_OP op, PrintWriter gravar){
+	if( op != null){
+		A_OP1 op1;
+		A_OP2 op2;
+		A_OP3 op3;
+		A_OP4 op4;
+		A_OP5 op5;
+		A_OP6 op6;
+		A_OP7 op7;
+		A_OP8 op8;
+		A_OP9 op9;
+		A_OP10 op10;
+		A_OP11 op11;
+		A_OP12 op12;
+
+		if(op instanceof A_OP1){
+			op1 = (A_OP1) op;
+			PRINT_OP1(op1, gravar);
+
+		} else if(op instanceof A_OP2){
+			op2 = (A_OP2) op;
+			PRINT_OP2(op2, gravar);
+
+		} else if(op instanceof A_OP3){
+			op3 = (A_OP3) op;
+			PRINT_OP3(op3, gravar);
+
+		} else if(op instanceof A_OP4){
+			op4 = (A_OP4) op;
+			PRINT_OP4(op4, gravar);
+
+		} else if(op instanceof A_OP5){
+			op5 = (A_OP5) op;
+			PRINT_OP5(op5, gravar);
+
+		} else if(op instanceof A_OP6){
+			op6 = (A_OP6) op;
+			PRINT_OP6(op6, gravar);
+
+		} else if(op instanceof A_OP7){
+			op7 = (A_OP7) op;
+			PRINT_OP7(op7, gravar);
+
+		} else if(op instanceof A_OP8){
+			op8 = (A_OP8) op;
+			PRINT_OP8(op8, gravar);
+
+		} else if(op instanceof A_OP9){
+			op9 = (A_OP9) op;
+			PRINT_OP9(op9, gravar);
+
+		} else if(op instanceof A_OP10){
+			op10 = (A_OP10) op;
+			PRINT_OP10(op10, gravar);
+
+		} else if(op instanceof A_OP11){
+			op11 = (A_OP11) op;
+			PRINT_OP11(op11, gravar);
+
+		} else if(op instanceof A_OP12){
+			op12 = (A_OP12) op;
+			PRINT_OP12(op12, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_OP1(A_OP1 op1, PrintWriter gravar){
+	if( op1 != null){
+		gravar.print(op1.mais);
+	}
+}
+
+
+
+public static void PRINT_OP2(A_OP2 op2, PrintWriter gravar){
+	if( op2 != null){
+		gravar.print(op2.menos);
+	}
+}
+
+
+
+public static void PRINT_OP3(A_OP3 op3, PrintWriter gravar){
+	if( op3 != null){
+		gravar.print(op3.vezes);
+	}
+}
+
+
+
+public static void PRINT_OP4(A_OP4 op4, PrintWriter gravar){
+	if( op4 != null){
+		gravar.print(op4.dividir);
+	}
+}
+
+
+
+public static void PRINT_OP5(A_OP5 op5, PrintWriter gravar){
+	if( op5 != null){
+		gravar.print(op5.e);
+	}
+}
+
+
+
+public static void PRINT_OP6(A_OP6 op6, PrintWriter gravar){
+	if( op6 != null){
+		gravar.print(op6.ou);
+	}
+}
+
+
+
+public static void PRINT_OP7(A_OP7 op7, PrintWriter gravar){
+	if( op7 != null){
+		gravar.print(op7.menor);
+	}
+}
+
+
+
+public static void PRINT_OP8(A_OP8 op8, PrintWriter gravar){
+	if( op8 != null){
+		gravar.print(op8.maior);
+	}
+}
+
+
+
+public static void PRINT_OP9(A_OP9 op9, PrintWriter gravar){
+	if( op9!= null){
+		gravar.print(op9.igualdade);
+	}
+}
+
+
+
+public static void PRINT_OP10(A_OP10 op10, PrintWriter gravar){
+	if( op10 != null){
+		gravar.print(op10.diferenca);
+	}
+}
+
+
+
+public static void PRINT_OP11(A_OP11 op11, PrintWriter gravar){
+	if( op11 != null){
+		gravar.print(op11.maiorigual);
+	}
+}
+
+
+
+public static void PRINT_OP12(A_OP12 op12, PrintWriter gravar){
+	if( op12 != null){
+		gravar.print(op12.menorigual);
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION(A_EXPRESSION expression, PrintWriter gravar){
+	if( expression != null){
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			PRINT_EXPRESSION1(expression1, gravar);
+		}else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			PRINT_EXPRESSION2(expression2, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION_TRANSACTION(A_EXPRESSION expression, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( expression != null){
+		A_EXPRESSION1 expression1;
+		A_EXPRESSION2 expression2;
+
+		if(expression instanceof A_EXPRESSION1){
+			expression1 = (A_EXPRESSION1) expression;
+			PRINT_EXPRESSION1_TRANSACTION(expression1, gravar, numeroGlobal, declaracoes);
+		}else if(expression instanceof A_EXPRESSION2){
+			expression2 = (A_EXPRESSION2) expression;
+			PRINT_EXPRESSION2_TRANSACTION(expression2, gravar, numeroGlobal, declaracoes);
+		}
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION1(A_EXPRESSION1 expression1, PrintWriter gravar){
+	if( expression1 != null){
+		gravar.print(expression1.aparenteses);
+		PRINT_EXPRESSION(expression1.expression, gravar);
+		gravar.print(expression1.fparenteses);
+		PRINT_EXPRESSION_OP(expression1.expression_op, gravar);
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION1_TRANSACTION(A_EXPRESSION1 expression1, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( expression1 != null){
+		//A_MINIC.direitaDaAtribuicao = expression1.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+
+		gravar.print(expression1.aparenteses);
+		PRINT_EXPRESSION_TRANSACTION(expression1.expression, gravar, numeroGlobal, declaracoes);
+		gravar.print(expression1.fparenteses);
+		PRINT_EXPRESSION_OP_TRANSACTION(expression1.expression_op, gravar, numeroGlobal, declaracoes);
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION2(A_EXPRESSION2 expression2, PrintWriter gravar){
+	if( expression2 != null){
+		PRINT_FACTOR(expression2.factor, gravar);
+		PRINT_EXPRESSION_OP(expression2.expression_op, gravar);
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION2_TRANSACTION(A_EXPRESSION2 expression2, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( expression2 != null){
+		//A_MINIC.direitaDaAtribuicao = expression2.getDeclaracoes(A_MINIC.direitaDaAtribuicao);
+
+		PRINT_FACTOR_TRANSACTION(expression2.factor, gravar, numeroGlobal, declaracoes);
+		PRINT_EXPRESSION_OP_TRANSACTION(expression2.expression_op, gravar, numeroGlobal, declaracoes);
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION_OP(A_EXPRESSION_OP expression_op, PrintWriter gravar){
+	if( expression_op != null){
+		gravar.print(" ");
+		PRINT_OP(expression_op.op, gravar);
+		gravar.print(" ");
+		PRINT_EXPRESSION(expression_op.expression, gravar);
+	}
+}
+
+
+
+public static void PRINT_EXPRESSION_OP_TRANSACTION(A_EXPRESSION_OP expression_op, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( expression_op != null){
+		gravar.print(" ");
+		PRINT_OP(expression_op.op, gravar);
+		gravar.print(" ");
+		PRINT_EXPRESSION_TRANSACTION(expression_op.expression, gravar, numeroGlobal, declaracoes);
+	}
+}
+
+
+
+public static void PRINT_POINTER_ADRESS(A_POINTER_ADRESS pointer_adress, PrintWriter gravar){
+	if( pointer_adress != null){
+		A_POINTER_ADRESS1 pointer_adress1;
+		A_POINTER_ADRESS2 pointer_adress2;
+
+		if(pointer_adress instanceof A_POINTER_ADRESS1){
+			pointer_adress1 = (A_POINTER_ADRESS1) pointer_adress;
+			PRINT_POINTER_ADRESS1(pointer_adress1, gravar);
+
+		}else if(pointer_adress instanceof A_POINTER_ADRESS2){
+			pointer_adress2 = (A_POINTER_ADRESS2) pointer_adress;
+			PRINT_POINTER_ADRESS2(pointer_adress2, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_POINTER_ADRESS1(A_POINTER_ADRESS1 pointer_adress1, PrintWriter gravar){
+	if( pointer_adress1 != null){
+		PRINT_POINTER_ADRESS_DERIV1(pointer_adress1.pointer_adress_deriv1, gravar);
+	}
+}
+
+
+
+public static void PRINT_POINTER_ADRESS2(A_POINTER_ADRESS2 pointer_adress2, PrintWriter gravar){
+	if( pointer_adress2 != null){
+		PRINT_POINTER_ADRESS_DERIV2(pointer_adress2.pointer_adress_deriv2, gravar);
+	}
+}
+
+
+
+public static void PRINT_POINTER_ADRESS_DERIV1(A_POINTER_ADRESS_DERIV1 pointer_adress_deriv1, PrintWriter gravar){
+	if( pointer_adress_deriv1 != null){
+		for(int i=0 ; i<pointer_adress_deriv1.ponteiro.size() ; i++){
+			gravar.print(pointer_adress_deriv1.ponteiro.get(i));
+		}
+		
+		PRINT_POINTER_ADRESS_DERIV2(pointer_adress_deriv1.pointer_adress_deriv2, gravar);
+	}
+}
+
+
+
+public static void PRINT_POINTER_ADRESS_DERIV2(A_POINTER_ADRESS_DERIV2 pointer_adress_deriv2, PrintWriter gravar){
+	if( pointer_adress_deriv2 != null){
+		gravar.print(pointer_adress_deriv2.ecomercial);
+
+		for(int i=0; i<pointer_adress_deriv2.ponteiro.size() ; i++){
+			gravar.print("*");
+		}
+	}
+}
+
+
+
+public static void PRINT_FACTOR(A_FACTOR factor, PrintWriter gravar){
+	if( factor != null){
+		A_FACTOR1 factor1;
+		A_FACTOR2 factor2;
+		A_FACTOR3 factor3;
+		A_FACTOR4 factor4;
+		A_FACTOR5 factor5;
+
+		if(factor instanceof A_FACTOR1){
+			factor1 = (A_FACTOR1) factor;
+			PRINT_FACTOR1(factor1, gravar);
+
+		}else if(factor instanceof A_FACTOR2){
+			factor2 = (A_FACTOR2) factor;
+			PRINT_FACTOR2(factor2, gravar);
+			
+		}else if(factor instanceof A_FACTOR3){
+			factor3 = (A_FACTOR3) factor;
+			PRINT_FACTOR3(factor3, gravar);
+			
+		}else if(factor instanceof A_FACTOR4){
+			factor4 = (A_FACTOR4) factor;
+			PRINT_FACTOR4(factor4, gravar);
+			
+		}else if(factor instanceof A_FACTOR5){
+			factor5 = (A_FACTOR5) factor;
+			PRINT_FACTOR5(factor5, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_FACTOR_TRANSACTION(A_FACTOR factor, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( factor != null){
+		A_FACTOR1 factor1;
+		A_FACTOR2 factor2;
+		A_FACTOR3 factor3;
+		A_FACTOR4 factor4;
+		A_FACTOR5 factor5;
+
+		if(factor instanceof A_FACTOR1){
+			factor1 = (A_FACTOR1) factor;
+			PRINT_FACTOR1_TRANSACTION(factor1, gravar, numeroGlobal, declaracoes);
+
+		}else if(factor instanceof A_FACTOR2){
+			factor2 = (A_FACTOR2) factor;
+			PRINT_FACTOR2(factor2, gravar);
+			
+		}else if(factor instanceof A_FACTOR3){
+			factor3 = (A_FACTOR3) factor;
+			PRINT_FACTOR3(factor3, gravar);
+			
+		}else if(factor instanceof A_FACTOR4){
+			factor4 = (A_FACTOR4) factor;
+			PRINT_FACTOR4(factor4, gravar);
+			
+		}else if(factor instanceof A_FACTOR5){
+			factor5 = (A_FACTOR5) factor;
+			PRINT_FACTOR5(factor5, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_FACTOR1(A_FACTOR1 factor1, PrintWriter gravar){
+	if( factor1 != null){
+		PRINT_POINTER_ADRESS(factor1.pointer_adress, gravar);
+		gravar.print(factor1.id);
+		PRINT_FUNCTIONS_ARGUMENTS(factor1.functions_arguments, gravar);
+	}
+}
+
+
+
+public static void PRINT_FACTOR1_TRANSACTION(A_FACTOR1 factor1, PrintWriter gravar, String numeroGlobal, ArrayList<String> declaracoes){
+	if( factor1 != null){
+		PRINT_POINTER_ADRESS(factor1.pointer_adress, gravar);
+		gravar.print(factor1.id);
+		PRINT_FUNCTIONS_ARGUMENTS_TRANSACTION(factor1.functions_arguments, gravar, numeroGlobal, declaracoes);
+	}
+}
+
+
+
+public static void PRINT_FACTOR2(A_FACTOR2 factor2, PrintWriter gravar){
+	if( factor2 != null){
+		gravar.print(factor2.digitos);
+	}
+}
+
+
+
+public static void PRINT_FACTOR3(A_FACTOR3 factor3, PrintWriter gravar){
+	if( factor3 != null){
+		gravar.print(factor3.digitosflutuantes);
+	}
+}
+
+
+
+public static void PRINT_FACTOR4(A_FACTOR4 factor4, PrintWriter gravar){
+	if( factor4 != null){
+		gravar.print(factor4.nulo);
+	}
+}
+
+
+
+public static void PRINT_FACTOR5(A_FACTOR5 factor5, PrintWriter gravar){
+	if( factor5 != null){
+		gravar.print(factor5.aaspassimples);
+		PRINT_CHAR_WORDS(factor5.char_words, gravar);
+		gravar.print(factor5.faspassimples);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS(A_CHAR_WORDS char_words, PrintWriter gravar){
+	if( char_words != null){
+		A_CHAR_WORDS1 char_words1;
+		A_CHAR_WORDS2 char_words2;
+		A_CHAR_WORDS3 char_words3;
+		A_CHAR_WORDS4 char_words4;
+		A_CHAR_WORDS5 char_words5;
+		A_CHAR_WORDS6 char_words6;
+		A_CHAR_WORDS7 char_words7;
+		A_CHAR_WORDS8 char_words8;
+
+		if(char_words instanceof A_CHAR_WORDS1){
+			char_words1 = (A_CHAR_WORDS1) char_words;
+			PRINT_CHAR_WORDS1(char_words1, gravar);
+
+		}else if(char_words instanceof A_CHAR_WORDS2){
+			char_words2 = (A_CHAR_WORDS2) char_words;
+			PRINT_CHAR_WORDS2(char_words2, gravar);
+
+		}else if(char_words instanceof A_CHAR_WORDS3){
+			char_words3 = (A_CHAR_WORDS3) char_words;
+			PRINT_CHAR_WORDS3(char_words3, gravar);
+
+		}else if(char_words instanceof A_CHAR_WORDS4){
+			char_words4 = (A_CHAR_WORDS4) char_words;
+			PRINT_CHAR_WORDS4(char_words4, gravar);
+
+		}else if(char_words instanceof A_CHAR_WORDS5){
+			char_words5 = (A_CHAR_WORDS5) char_words;
+			PRINT_CHAR_WORDS5(char_words5, gravar);
+
+		}else if(char_words instanceof A_CHAR_WORDS6){
+			char_words6 = (A_CHAR_WORDS6) char_words;
+			PRINT_CHAR_WORDS6(char_words6, gravar);
+
+		}else if(char_words instanceof A_CHAR_WORDS7){
+			char_words7 = (A_CHAR_WORDS7) char_words;
+			PRINT_CHAR_WORDS7(char_words7, gravar);
+
+		}else if(char_words instanceof A_CHAR_WORDS8){
+			char_words8 = (A_CHAR_WORDS8) char_words;
+			PRINT_CHAR_WORDS8(char_words8, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS1(A_CHAR_WORDS1 char_words1, PrintWriter gravar){
+	if( char_words1 != null){
+		gravar.print(char_words1.id);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS2(A_CHAR_WORDS2 char_words2, PrintWriter gravar){
+	if( char_words2 != null){
+		gravar.print(char_words2.digitos);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS3(A_CHAR_WORDS3 char_words3, PrintWriter gravar){
+	if( char_words3 != null){
+		gravar.print(char_words3.digitosflutuantes);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS4(A_CHAR_WORDS4 char_words4, PrintWriter gravar){
+	if( char_words4 != null){
+		gravar.print(char_words4.porcento);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS5(A_CHAR_WORDS5 char_words5, PrintWriter gravar){
+	if( char_words5 != null){
+		gravar.print(char_words5.barrazero);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS6(A_CHAR_WORDS6 char_words6, PrintWriter gravar){
+	if( char_words6 != null){
+		gravar.print(char_words6.barran);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS7(A_CHAR_WORDS7 char_words7, PrintWriter gravar){
+	if( char_words7 != null){
+		gravar.print(char_words7.barrar);
+	}
+}
+
+
+
+public static void PRINT_CHAR_WORDS8(A_CHAR_WORDS8 char_words8, PrintWriter gravar){
+	if( char_words8 != null){
+		gravar.print(char_words8.barrat);
+	}
+}
+
+
+
+public static void PRINT_VAR_IN_OUT(A_VAR_IN_OUT var_in_out, PrintWriter gravar){
+	if( var_in_out != null){
+		gravar.print(var_in_out.virgula);
+		gravar.print(" ");
+		PRINT_POINTER_ADRESS(var_in_out.pointer_adress, gravar);
+		gravar.print(var_in_out.id);
+	}
+}
+
+
+
+public static void PRINT_CLAUSULA_TRANSACTION(A_CLAUSULA_TRANSACTION clausula_transaction, PrintWriter gravar, String tab){
+	if( clausula_transaction != null){
+		A_CLAUSULA_TRANSACTION1 clausula_transaction1;
+		A_CLAUSULA_TRANSACTION2 clausula_transaction2;
+
+		if(clausula_transaction instanceof A_CLAUSULA_TRANSACTION1){
+			clausula_transaction1 = (A_CLAUSULA_TRANSACTION1) clausula_transaction;
+			PRINT_CLAUSULA_TRANSACTION1(clausula_transaction1, gravar, tab);
+
+		}else if(clausula_transaction instanceof A_CLAUSULA_TRANSACTION2){
+			clausula_transaction2 = (A_CLAUSULA_TRANSACTION2) clausula_transaction;
+			PRINT_CLAUSULA_TRANSACTION2(clausula_transaction2, gravar, tab);
+		}
+	}
+}
+
+
+/*
+public static void PRINT_CLAUSULA_TRANSACTION1(A_CLAUSULA_TRANSACTION1 clausula_transaction1, PrintWriter gravar, String tab){
+	String tabTemp = tab;
+	tab = tab + "\t";
+
+	if( clausula_transaction1 != null){
+		gravar.print(clausula_transaction1.parallel);
+		gravar.print(" ");
+		gravar.print(clausula_transaction1.transaction);
+		gravar.println("");
+		gravar.print(tabTemp + clausula_transaction1.achaves);
+		gravar.println("");
+
+		for(int i=0; i<clausula_transaction1.comand.size() ; i++){
+			gravar.print(tab);
+			PRINT_COMAND(clausula_transaction1.comand.get(i), gravar, tab);
+			gravar.println("");
+		}
+
+		gravar.print(tabTemp + clausula_transaction1.fchaves);
+		gravar.println("");
+	}
+}
+*/
+
+
+public static void PRINT_CLAUSULA_TRANSACTION1(A_CLAUSULA_TRANSACTION1 clausula_transaction1, PrintWriter gravar, String tab){
+	String tabTemp = tab;
+	tab = tab + "\t";
+	SEQ_VAR seqVarTemp;
+	A_COMAND1 comand1;
+
+	int contadorDeDeclaracoes = 0;
+
+	if( clausula_transaction1 != null){
+		gravar.print(clausula_transaction1.parallel);
+		gravar.println("");
+		gravar.print(tabTemp + clausula_transaction1.achaves);
+		gravar.println("");
+		gravar.println("");
+		gravar.print(tab + "TM_INIT_THREAD;");
+		gravar.println("");
+		gravar.println("");
+
+		for(int i=0; i<clausula_transaction1.comand.size() ; i++){
+			gravar.print(tab);
+			if(clausula_transaction1.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) clausula_transaction1.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND(clausula_transaction1.comand.get(i), gravar, tab);
+			gravar.println("");
+		}
+
+		gravar.println("");
+		gravar.println(tab + "TM_EXIT_THREAD;");
+
+		gravar.println(tabTemp + clausula_transaction1.fchaves);
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+}
+
+
+
+/*
+public static void PRINT_CLAUSULA_TRANSACTION2(A_CLAUSULA_TRANSACTION2 clausula_transaction2, PrintWriter gravar, String tab){
+	String tabTemp = tab;
+	tab = tab + "\t";
+	
+	if( clausula_transaction2 != null){
+		PRINT_DIRETIVA(clausula_transaction2.diretiva, gravar);
+		gravar.print(" ");
+		gravar.print(clausula_transaction2.transaction);
+		gravar.print(" ");
+		gravar.print(clausula_transaction2.aparenteses);
+		PRINT_TDECLIST(clausula_transaction2.tdeclist, gravar);
+		gravar.print(clausula_transaction2.fparenteses);
+		gravar.println("");
+		gravar.print(tabTemp + clausula_transaction2.achaves);
+		gravar.println("");
+
+		for(int i=0; i<clausula_transaction2.comand.size() ; i++){
+			gravar.print(tab);
+			PRINT_COMAND(clausula_transaction2.comand.get(i), gravar, tab);
+			gravar.println("");
+		}
+
+		gravar.print(tabTemp + clausula_transaction2.fchaves);
+		gravar.println("");
+	}
+}
+*/
+
+
+
+public static void PRINT_CLAUSULA_TRANSACTION2(A_CLAUSULA_TRANSACTION2 clausula_transaction2, PrintWriter gravar, String tab){
+	String tabTemp = tab;
+	tab = tab + "\t";
+	SEQ_VAR seqVarTemp;
+	SEQ_VAR seqVarTemp2;
+	ArrayList<SEQ_VAR> listaDeComandosTemp = new ArrayList();
+	ArrayList<SEQ_VAR> listaDeComandosTemp2 = new ArrayList();
+
+	A_COMAND1 comand1;
+	A_TYPE1 type1;
+	A_TYPE2 type2;
+	A_TYPE3 type3;
+	A_TYPE4 type4;
+	A_TYPE5 type5;
+	
+	ArrayList<DECLARATIONS> parametros = new ArrayList();
+	ArrayList<String> declaracoes = new ArrayList();
+	String numeroGlobal;
+
+	int contadorDeDeclaracoes = 0;
+
+	if( clausula_transaction2 != null){
+		A_MINIC.contadorGlobal++;
+		numeroGlobal = String.format("_%03d_", A_MINIC.contadorGlobal);
+		parametros = clausula_transaction2.getDeclaracoes(parametros);
+
+		for(int i=0 ; i<parametros.size() ; i++){
+			declaracoes.add(parametros.get(i).id);
+		}
+
+		PRINT_DIRETIVA(clausula_transaction2.diretiva, gravar);
+		//gravar.print(" ");
+		//gravar.print(clausula_transaction2.transaction);
+		//gravar.print(" ");
+		//gravar.print(clausula_transaction2.aparenteses);
+		//PRINT_TDECLIST(clausula_transaction2.tdeclist, gravar);
+		//gravar.print(clausula_transaction2.fparenteses);
+		gravar.println("");
+		gravar.print(tabTemp + clausula_transaction2.achaves);
+		gravar.println();
+
+
+		// Invertendo a lista de declaracoes.
+		for(int i = A_MINIC.seqVar.size()-1 ; i>=0 ; i--){
+			listaDeComandosTemp.add(A_MINIC.seqVar.get(i));
+		}
+
+		// Trocando o id das variaveis que se repetem que também são menos significativas, para "remover"
+		for(int i=0 ; i<listaDeComandosTemp.size() ; i++){ 
+			for(int j=i+1; j<listaDeComandosTemp.size() ; j++){
+				if(listaDeComandosTemp.get(i).id.equals(listaDeComandosTemp.get(j).id)){
+					seqVarTemp2 = new SEQ_VAR();
+					seqVarTemp2.id = "remover" + j;
+					listaDeComandosTemp.set(j, seqVarTemp2);
+				}
+			}
+		}
+
+		// removendo da lista as declarações marcadas como remover
+		for(int i=0 ; i<listaDeComandosTemp.size() ; i++){ 
+			if(!listaDeComandosTemp.get(i).id.contains("remover")){
+				listaDeComandosTemp2.add(listaDeComandosTemp.get(i));
+			}
+		}
+	
+
+		// Imprimindo declarações das variaveis da transaction
+		for(int i=0 ; i<declaracoes.size() ; i++){
+			for(int j=0 ; j<listaDeComandosTemp2.size() ; j++){
+				if(declaracoes.get(i).equals(listaDeComandosTemp2.get(j).id)){
+					if(listaDeComandosTemp2.get(j).type instanceof A_TYPE1){
+						type1 = (A_TYPE1) listaDeComandosTemp2.get(j).type;
+						gravar.println(tab + type1.var_int + " " + numeroGlobal + listaDeComandosTemp2.get(j).id + ";");
+
+					} else if(listaDeComandosTemp2.get(j).type instanceof A_TYPE2){
+						type2 = (A_TYPE2) listaDeComandosTemp2.get(j).type;
+						gravar.println(tab + type2.var_float + " " + numeroGlobal + listaDeComandosTemp2.get(j).id + ";");
+
+					} else if(listaDeComandosTemp2.get(j).type instanceof A_TYPE3){
+						type3 = (A_TYPE3) listaDeComandosTemp2.get(j).type;
+						gravar.println(tab + type3.var_char + " " + numeroGlobal + listaDeComandosTemp2.get(j).id + ";");
+
+					} else if(listaDeComandosTemp2.get(j).type instanceof A_TYPE4){
+						type4 = (A_TYPE4) listaDeComandosTemp2.get(j).type;
+						gravar.println(tab + type4.var_double + " " + numeroGlobal + listaDeComandosTemp2.get(j).id + ";");
+
+					} else if(listaDeComandosTemp2.get(j).type instanceof A_TYPE5){
+						type5 = (A_TYPE5) listaDeComandosTemp2.get(j).type;
+						gravar.println(tab + type5.var_void + " " + numeroGlobal + listaDeComandosTemp2.get(j).id + ";");
+					}
+				}
+			}
+		}
+
+		listaDeComandosTemp.clear(); // resetando as listas temporarias.
+		listaDeComandosTemp2.clear(); // resetando as listas.
+
+		gravar.println();
+		gravar.println(tab + "vtm_dataset_t" + " " + numeroGlobal + "dSet" + ";" );
+		gravar.println(tab + "vtm_tm_t" + " " + "*" + numeroGlobal + "tm" + ";" );
+		gravar.println();
+		//gravar.println(tab + "TM_START(&" + numeroGlobal + "tm" + ")" + ";" );
+		gravar.println(tab + "vtm_dataset_init(&" + numeroGlobal + "dSet" + ")" + ";" );
+
+		for(int i=0 ; i<parametros.size() ; i++){
+			gravar.println(tab + "vtm_dataset_pack(&" + numeroGlobal + "dSet" + ", " + parametros.get(i).acao + ", " + parametros.get(i).id + ");");
+		}
+
+		gravar.println(tab + numeroGlobal + "tm = vtm_start( &" + numeroGlobal + "dSet );");
+
+		gravar.println();
+
+		// sequencia de comandos
+		for(int i=0; i<clausula_transaction2.comand.size() ; i++){
+			if(clausula_transaction2.comand.get(i) instanceof A_COMAND1){
+				comand1 = (A_COMAND1) clausula_transaction2.comand.get(i);
+				seqVarTemp = new SEQ_VAR(comand1.type, comand1.id);
+				A_MINIC.seqVar.add(seqVarTemp);
+				contadorDeDeclaracoes++;
+			}
+			PRINT_COMAND_TRANSACTION(clausula_transaction2.comand.get(i), gravar, tab, numeroGlobal, declaracoes);
+			gravar.println();
+		}
+
+		gravar.println(tab + "TM_COMMIT(" + numeroGlobal + "tm" + ")" + ";" );
+		gravar.println(tabTemp + clausula_transaction2.fchaves);
+
+		// remove os itens que foram adicionados pois não serão mais utilizados.
+		for(int i = contadorDeDeclaracoes-1 ; i>=0 ; i--){
+			A_MINIC.seqVar.remove(i);
+		}
+	}
+}
+
+
+
+public static void PRINT_DIRETIVA(A_DIRETIVA diretiva, PrintWriter gravar){
+	if( diretiva != null){
+		A_DIRETIVA1 diretiva1;
+		A_DIRETIVA2 diretiva2;
+		A_DIRETIVA3 diretiva3;
+
+		if(diretiva instanceof A_DIRETIVA1){
+			diretiva1 = (A_DIRETIVA1) diretiva;
+			PRINT_DIRETIVA1(diretiva1, gravar);
+
+		}else if(diretiva instanceof A_DIRETIVA2){
+			diretiva2 = (A_DIRETIVA2) diretiva;
+			PRINT_DIRETIVA2(diretiva2, gravar);
+
+		}else if(diretiva instanceof A_DIRETIVA3){
+			diretiva3 = (A_DIRETIVA3) diretiva;
+			PRINT_DIRETIVA3(diretiva3, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_DIRETIVA1(A_DIRETIVA1 diretiva1, PrintWriter gravar){
+	if( diretiva1 != null){
+		gravar.print(diretiva1.section);
+	}
+}
+
+
+
+public static void PRINT_DIRETIVA2(A_DIRETIVA2 diretiva2, PrintWriter gravar){
+	if( diretiva2 != null){
+		gravar.print(diretiva2.var_for);
+	}
+}
+
+
+
+public static void PRINT_DIRETIVA3(A_DIRETIVA3 diretiva3, PrintWriter gravar){
+	if( diretiva3 != null){
+		gravar.print(diretiva3.task);
+	}
+}
+
+
+
+public static void PRINT_TDECLIST(A_TDECLIST tdeclist, PrintWriter gravar){
+	if( tdeclist != null){
+		PRINT_TDEC(tdeclist.tdec, gravar);
+		PRINT_TDECLIST_REC(tdeclist.tdeclist_rec, gravar);
+	}
+}
+
+
+
+public static void PRINT_TDECLIST_REC(A_TDECLIST_REC tdeclist_rec, PrintWriter gravar){
+	if( tdeclist_rec != null){
+		gravar.print(tdeclist_rec.virgula);
+		gravar.print(" ");
+		PRINT_TDECLIST(tdeclist_rec.tdeclist, gravar);
+	}
+}
+
+
+
+public static void PRINT_TDEC(A_TDEC tdec, PrintWriter gravar){
+	if( tdec != null){
+		A_TDEC1 tdec1;
+		A_TDEC2 tdec2;
+
+		if(tdec instanceof A_TDEC1){
+			tdec1 = (A_TDEC1) tdec;
+			PRINT_TDEC1(tdec1, gravar);
+
+		}else if(tdec instanceof A_TDEC2){
+			tdec2 = (A_TDEC2) tdec;
+			PRINT_TDEC2(tdec2, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_TDEC1(A_TDEC1 tdec1, PrintWriter gravar){
+	if( tdec1 != null){
+		PRINT_OPT(tdec1.opt, gravar);
+		gravar.print(" ");
+		gravar.print(tdec1.doispontos);
+		gravar.print(" ");
+		gravar.print(tdec1.id);
+	}
+}
+
+
+
+public static void PRINT_TDEC2(A_TDEC2 tdec2, PrintWriter gravar){
+	if( tdec2 != null){
+		gravar.print(tdec2.id);
+	}
+}
+
+
+
+public static void PRINT_OPT(A_OPT opt, PrintWriter gravar){
+	if( opt != null){
+		A_OPT1 opt1;
+		A_OPT2 opt2;
+		A_OPT3 opt3;
+
+		if(opt instanceof A_OPT1){
+			opt1 = (A_OPT1) opt;
+			PRINT_OPT1(opt1, gravar);
+
+		}else if(opt instanceof A_OPT2){
+			opt2 = (A_OPT2) opt;
+			PRINT_OPT2(opt2, gravar);
+
+		}else if(opt instanceof A_OPT3){
+			opt3 = (A_OPT3) opt;
+			PRINT_OPT3(opt3, gravar);
+		}
+	}
+}
+
+
+
+public static void PRINT_OPT1(A_OPT1 opt1, PrintWriter gravar){
+	if( opt1 != null){
+		gravar.print(opt1.R);
+	}
+}
+
+
+
+public static void PRINT_OPT2(A_OPT2 opt2, PrintWriter gravar){
+	if( opt2 != null){
+		gravar.print(opt2.W);
+	}
+}
+
+
+
+public static void PRINT_OPT3(A_OPT3 opt3, PrintWriter gravar){
+	if( opt3 != null){
+		gravar.print(opt3.RW);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+PARSER_END(MiniC)
+
+
+SPECIAL_TOKEN :
+{
+	  <ESPACO: " ">
+	| <TAB: "\t">
+	| <RECUO: "\r">
+	| <QUEBRALINHA: "\n">
+}
+
+
+SKIP :
+{
+  "/*" : WithinComment
+}
+<WithinComment> SKIP :
+{
+  "*/" : DEFAULT
+}
+<WithinComment> MORE :
+{
+  <~[]>
+}
+
+
+TOKEN :
+{
+  <INCLUDE: "include">
+| <MAIN: "main">
+
+| <INT: "int">
+| <FLOAT: "float">
+| <CHAR: "char">
+| <DOUBLE: "double">
+| <VOID: "void">
+
+| <IF: "if">
+| <WHILE: "while">
+| <RETURN: "return">
+| <PRINTF: "printf">
+
+| <ACHAVES: "{">
+| <FCHAVES: "}">
+| <APARENTESES: "(">
+| <FPARENTESES: ")">
+| <ACOLCHETES: "[">
+| <FCOLCHETES: "]">
+| <PONTO: ".">
+| <DOISPONTOS: ":">
+| <PONTOEVIRGULA: ";">
+| <VIRGULA: ",">
+| <ATRIBUICAO: "=">
+
+| <MAISMAIS: "++">
+| <MENOSMENOS: "--">
+| <MAIS: "+">
+| <MENOS: "-">
+| <ASTERISCO: "*">
+| <BARRA: "/">
+| <AND: "&&">
+| <OR: "||">
+| <MENOR: "<">
+| <MAIOR: ">">
+| <IGUALDADE: "==">
+| <DIFERENCA: "!=">
+| <MAIORIGUAL: ">=">
+| <MENORIGUAL: "<=">
+
+| <NULLL: "NULL">
+| <BARRAZERO: "\\0">
+| <BARRANT: "\\n">
+| <BARRART: "\\r">
+| <BARRATT: "\\t">
+| <ASPAS: "\"">
+| <ASPASSIMPLES: "'">
+| <PORCENTO: "%">
+| <ECOMERCIAL: "&">
+| <CERQUILHA: "#">
+| <COMMENT: "//">
+
+| <PRAGMA: "pragma">
+| <OMP: "omp">
+| <PARALLEL: "parallel">
+| <TRANSACTION: "transaction">
+| <SECTION: "section">
+| <FOR: "for">
+| <TASK: "task">
+| <R: "R">
+| <W: "W">
+| <RW: "RW">
+
+}
+
+TOKEN :
+{
+
+  <#T_LIB: ("."("h"))>
+| <#T_ALPHABET: ["a"-"z","A"-"Z","_","$"]>
+| <#T_DIGIT: ["0"-"9"]>
+| <#T_WORDS: "include" | "main" | "int"  | "float"  | "char" | "double" | "void" | "if" | "while" | "return" | "printf" | "pragma" | "omp" | "parallel" | "transaction" | "section" | "for" | "task"  | "R" | "W" | "RW" >
+
+| <I_LIB: (<T_ALPHABET>)+ <T_LIB> >
+| <I_ID: <T_ALPHABET> | (<T_ALPHABET> | <T_WORDS>) (<T_DIGIT> | <T_WORDS> | <T_ALPHABET>)+  >
+| <I_DIGITS: (<T_DIGIT>)+ >
+| <I_DIGITS_FLOATING: (<T_DIGIT>)+ ("."(<T_DIGIT>)+) >
+
+}			
+
+
+// ==================================== INICIO DO PARSER ======================================
+
+
+A_MINIC MiniC () :
+{A_LIBRARIES libraries = null; A_FUNCTIONS functions = null;     ArrayList<A_LIBRARIES> libraries_list = new ArrayList<A_LIBRARIES>(); A_MAIN var_main = null; ArrayList<A_FUNCTIONS> functions_list = new ArrayList<A_FUNCTIONS>();}
+{
+	(libraries=LIBRARIES() {libraries_list.add(libraries);})+ var_main=MAIN() (functions=FUNCTIONS() {functions_list.add(functions);})* <EOF>
+	{ return new A_MINIC(libraries_list, var_main, functions_list); } 
+}
+
+
+A_LIBRARIES LIBRARIES () :
+{Token id = null;}
+{
+	<CERQUILHA> <INCLUDE> <MENOR> id=<I_LIB> <MAIOR>
+	{ return new A_LIBRARIES("#", "include", "<", id.image, ">"); }
+}
+
+
+A_MAIN MAIN () :
+{A_COMAND comand = null;     A_TYPE type = null; ArrayList<A_COMAND> comand_list = new ArrayList<A_COMAND>();}
+{
+	type=TYPE() <MAIN> <APARENTESES> <FPARENTESES> <ACHAVES> (comand=COMAND() {comand_list.add(comand);})+ <FCHAVES>
+	{ return new A_MAIN(type, "main", "(", ")", "{", comand_list, "}"); }
+}
+
+
+A_FUNCTIONS FUNCTIONS () :
+{A_COMAND comand= null;  Token ponteiro = null;   A_TYPE type= null; ArrayList<String> ponteiro_list = new ArrayList<String>(); Token id = null; A_PARAMETERS parameters= null; ArrayList<A_COMAND> comand_list= new ArrayList<A_COMAND>();}
+{
+	type=TYPE() (ponteiro=<ASTERISCO> {ponteiro_list.add(ponteiro.image);})*  id=<I_ID>  <APARENTESES> (parameters=PARAMETERS())? <FPARENTESES> <ACHAVES> (comand=COMAND() {comand_list.add(comand);})+ <FCHAVES>
+	{ return new A_FUNCTIONS(type, ponteiro_list, id.image, "(", parameters, ")", "{", comand_list, "}"); }
+}
+
+	
+A_TYPE TYPE () :
+{A_TYPE type = null;}
+{
+	  type=TYPE1() { return type; }
+	| type=TYPE2() { return type; }
+	| type=TYPE3() { return type; }
+	| type=TYPE4() { return type; }
+	| type=TYPE5() { return type; }
+}
+
+	A_TYPE1 TYPE1 () :
+	{}
+	{ 
+		<INT>
+		{ return new A_TYPE1("int"); }
+	}
+
+	A_TYPE2 TYPE2 () :
+	{}
+	{ 
+		<FLOAT> 
+		{ return new A_TYPE2("float"); }
+	}
+
+	A_TYPE3 TYPE3 () :
+	{}
+	{ 
+		<CHAR> 
+		{ return new A_TYPE3("char"); }
+	}
+
+	A_TYPE4 TYPE4 () :
+	{}
+	{ 
+		<DOUBLE>
+		{ return new A_TYPE4("double"); }
+	}
+
+	A_TYPE5 TYPE5 () :
+	{}
+	{ 
+		<VOID>
+		{ return new A_TYPE5("void"); }
+	}
+
+
+A_PARAMETERS PARAMETERS () :
+{ A_PARAMETERS_REC parameters_rec = null;  Token ponteiro = null;        A_TYPE type = null; ArrayList<String> ponteiro_list = new ArrayList<String>(); Token id = null; ArrayList<A_PARAMETERS_REC> parameters_rec_list = new ArrayList<A_PARAMETERS_REC>();}
+{
+	type=TYPE() (ponteiro=<ASTERISCO> {ponteiro_list.add(ponteiro.image);})* id=<I_ID> (parameters_rec=PARAMETERS_REC() {parameters_rec_list.add(parameters_rec);})*
+	{ return new A_PARAMETERS(type, ponteiro_list, id.image, parameters_rec_list); }
+}
+
+
+A_PARAMETERS_REC PARAMETERS_REC () :
+{Token ponteiro = null;   A_TYPE type = null; ArrayList<String> ponteiro_list = new ArrayList<String>(); Token id = null;}
+{
+	<VIRGULA> type=TYPE() (ponteiro=<ASTERISCO> {ponteiro_list.add(ponteiro.image);})* id=<I_ID>
+	{ return new A_PARAMETERS_REC(",", type, ponteiro_list, id.image); }
+}
+
+
+A_COMAND COMAND () :
+{A_COMAND comand = null;}
+{
+	  comand=COMAND1() { return comand; }
+	| comand=COMAND2() { return comand; }
+	| comand=COMAND3() { return comand; }
+	| comand=COMAND4() { return comand; }
+	| comand=COMAND5() { return comand; }
+	| comand=COMAND6() { return comand; }
+	| comand=COMAND7() { return comand; }
+}
+
+	A_COMAND1 COMAND1 () :
+	{Token ponteiro = null; A_TYPE type = null;  ArrayList<String> ponteiro_list = new ArrayList<String>(); Token id = null; }
+	{ 
+		type=TYPE() (ponteiro=<ASTERISCO> {ponteiro_list.add(ponteiro.image);})* id=<I_ID> <PONTOEVIRGULA>
+		{ return new A_COMAND1(type, ponteiro_list, id.image, ";"); }
+	}
+
+	A_COMAND2 COMAND2 () :
+	{A_POINTER_ADRESS_DERIV1 pointer_adress_deriv1 = null; Token id = null; A_I_ID_DERIV i_id_deriv = null;}
+	{ 
+		(pointer_adress_deriv1=POINTER_ADRESS_DERIV1())? id=<I_ID> i_id_deriv=I_ID_DERIV() <PONTOEVIRGULA>
+		{ return new A_COMAND2(pointer_adress_deriv1, id.image, i_id_deriv, ";"); }
+	}
+
+	A_COMAND3 COMAND3 () :
+	{A_COMAND comand = null;   A_EXPRESSION expression = null; ArrayList<A_COMAND> comand_list = new ArrayList<A_COMAND>();}
+	{ 
+		<IF>  <APARENTESES>  expression=EXPRESSION()  <FPARENTESES>  <ACHAVES> (comand=COMAND() {comand_list.add(comand);})+  <FCHAVES> 
+		{ return new A_COMAND3("if", "(", expression, ")", "{", comand_list, "}"); }
+	}
+
+	A_COMAND4 COMAND4 () :
+	{A_COMAND comand = null;   A_EXPRESSION expression = null; ArrayList<A_COMAND> comand_list = new ArrayList<A_COMAND>();}
+	{ 
+		<WHILE>  <APARENTESES>  expression=EXPRESSION()  <FPARENTESES>  <ACHAVES> (comand=COMAND() {comand_list.add(comand);})+  <FCHAVES> 
+		{ return new A_COMAND4("while", "(", expression, ")", "{", comand_list, "}"); }
+	}
+
+	A_COMAND5 COMAND5 () :
+	{A_EXPRESSION expression = null;}
+	{ 
+		<RETURN> expression=EXPRESSION() <PONTOEVIRGULA>
+		{ return new A_COMAND5("return", expression, ";"); }
+	}
+
+	A_COMAND6 COMAND6 () :
+	{A_CHAR_WORDS char_words = null; A_VAR_IN_OUT var_in_out = null;     ArrayList<A_CHAR_WORDS> char_words_list = new ArrayList<A_CHAR_WORDS>(); ArrayList<A_VAR_IN_OUT> var_in_out_list = new ArrayList<A_VAR_IN_OUT>();}
+	{ 
+		<PRINTF> <APARENTESES> <ASPAS> (char_words=CHAR_WORDS() {char_words_list.add(char_words);})* <ASPAS> (var_in_out=VAR_IN_OUT() {var_in_out_list.add(var_in_out);})* <FPARENTESES> <PONTOEVIRGULA> 
+		{ return new A_COMAND6("printf", "(", "\"", char_words_list, "\"", var_in_out_list, ")", ";"); }
+	}
+
+	A_COMAND7 COMAND7 () :
+	{A_CLAUSULA_TRANSACTION clausula_transaction = null; Token comentario = null; String coment = " ";}
+	{ 
+		(comentario=<COMMENT> {coment = comentario.image;})? <CERQUILHA> <PRAGMA> <OMP> clausula_transaction=CLAUSULA_TRANSACTION()
+		{ return new A_COMAND7(coment, "#", "pragma", "omp", clausula_transaction); }
+	}
+
+
+A_I_ID_DERIV I_ID_DERIV () :
+{A_I_ID_DERIV i_id_deriv = null;}
+{
+	  i_id_deriv=I_ID_DERIV1() { return i_id_deriv; }
+	| i_id_deriv=I_ID_DERIV2() { return i_id_deriv; }
+}
+
+	A_I_ID_DERIV1 I_ID_DERIV1 () :
+	{A_EXPRESSION expression = null;}
+	{ 
+		<ATRIBUICAO> expression=EXPRESSION()
+		{ return new A_I_ID_DERIV1("=", expression); }
+	}
+
+	A_I_ID_DERIV2 I_ID_DERIV2 () :
+	{A_FUNCTIONS_ARGUMENTS functions_arguments = null;}
+	{ 
+		functions_arguments=FUNCTIONS_ARGUMENTS()
+		{ return new A_I_ID_DERIV2(functions_arguments); }
+	}
+
+
+A_FUNCTIONS_ARGUMENTS FUNCTIONS_ARGUMENTS () :
+{A_ARGUMENTS arguments = null;}
+{
+	<APARENTESES> (arguments=ARGUMENTS())?  <FPARENTESES>
+	{ return new A_FUNCTIONS_ARGUMENTS("(", arguments, ")"); }
+}
+
+
+A_ARGUMENTS ARGUMENTS () :
+{A_ARGUMENTS_REC arguments_rec = null;    A_EXPRESSION expression = null; ArrayList<A_ARGUMENTS_REC> arguments_rec_list = new ArrayList<A_ARGUMENTS_REC>();}
+{
+	expression=EXPRESSION() (arguments_rec=ARGUMENTS_REC() {arguments_rec_list.add(arguments_rec);})*
+	{ return new A_ARGUMENTS(expression, arguments_rec_list); }
+}
+
+
+A_ARGUMENTS_REC ARGUMENTS_REC () :
+{A_EXPRESSION expression = null;}
+{
+	<VIRGULA> expression=EXPRESSION()
+	{ return new A_ARGUMENTS_REC(",", expression); }
+}
+
+
+A_OP OP () :
+{A_OP op = null;}
+{
+	  op=OP1() { return op; }
+	| op=OP2() { return op; }
+	| op=OP3() { return op; }
+	| op=OP4() { return op; }
+	| op=OP5() { return op; }
+	| op=OP6() { return op; }
+	| op=OP7() { return op; }
+	| op=OP8() { return op; }
+	| op=OP9() { return op; }
+	| op=OP10() { return op; }
+	| op=OP11() { return op; }
+	| op=OP12() { return op; }
+}
+
+	A_OP1 OP1 () :
+	{}
+	{ 
+		<MAIS> 
+		{ return new A_OP1("+"); }
+	}
+
+	A_OP2 OP2 () :
+	{}
+	{ 
+		<MENOS>
+		{ return new A_OP2("-"); }
+	}
+
+	A_OP3 OP3 () :
+	{}
+	{ 
+		<ASTERISCO>
+		{ return new A_OP3("*"); }
+	}
+
+	A_OP4 OP4 () :
+	{}
+	{ 
+		<BARRA>
+		{ return new A_OP4("/"); }
+	}
+
+	A_OP5 OP5 () :
+	{}
+	{ 
+		<AND>
+		{ return new A_OP5("&&"); }
+	}
+
+	A_OP6 OP6 () :
+	{}
+	{ 
+		<OR>
+		{ return new A_OP6("||"); }
+	}
+
+	A_OP7 OP7 () :
+	{}
+	{ 
+		<MENOR>
+		{ return new A_OP7("<"); }
+	}
+
+	A_OP8 OP8 () :
+	{}
+	{ 
+		<MAIOR>
+		{ return new A_OP8(">"); }
+	}
+
+	A_OP9 OP9 () :
+	{}
+	{ 
+		<IGUALDADE>
+		{ return new A_OP9("=="); }
+	}
+
+	A_OP10 OP10 () :
+	{}
+	{ 
+		<DIFERENCA>
+		{ return new A_OP10("!="); }
+	}
+
+	A_OP11 OP11 () :
+	{}
+	{ 
+		<MAIORIGUAL>
+		{ return new A_OP11(">="); }
+	}
+
+	A_OP12 OP12 () :
+	{}
+	{ 
+		<MENORIGUAL>
+		{ return new A_OP12("<="); }
+	}
+
+
+
+A_EXPRESSION EXPRESSION () :
+{A_EXPRESSION expression = null;}
+{
+	  expression=EXPRESSION1() { return expression; }
+	| expression=EXPRESSION2() { return expression; }
+}
+
+	A_EXPRESSION1 EXPRESSION1 () :
+	{A_EXPRESSION expression = null; A_EXPRESSION_OP expression_op = null;}
+	{ 
+		<APARENTESES>  expression=EXPRESSION()  <FPARENTESES> (expression_op=EXPRESSION_OP())?
+		{ return new A_EXPRESSION1("(", expression, ")", expression_op); }
+	}
+
+	A_EXPRESSION2 EXPRESSION2 () :
+	{A_FACTOR factor = null; A_EXPRESSION_OP expression_op = null;}
+	{ 
+		factor=FACTOR() (expression_op=EXPRESSION_OP())?
+		{ return new A_EXPRESSION2(factor, expression_op); }
+	}
+
+
+A_EXPRESSION_OP EXPRESSION_OP () :
+{A_OP op = null; A_EXPRESSION expression = null;}
+{
+	op=OP()  expression=EXPRESSION()
+	{ return new A_EXPRESSION_OP(op, expression); }
+}
+
+
+A_POINTER_ADRESS POINTER_ADRESS () :
+{A_POINTER_ADRESS pointer_adress = null;}
+{ 	  pointer_adress=POINTER_ADRESS1() { return pointer_adress; }
+	| pointer_adress=POINTER_ADRESS2() { return pointer_adress; }
+}
+
+	A_POINTER_ADRESS1 POINTER_ADRESS1 () :
+	{A_POINTER_ADRESS_DERIV1 pointer_adress_deriv1 = null;}
+	{ 
+		pointer_adress_deriv1=POINTER_ADRESS_DERIV1()
+		{ return new A_POINTER_ADRESS1(pointer_adress_deriv1); }
+	}
+
+	A_POINTER_ADRESS2 POINTER_ADRESS2 () :
+	{A_POINTER_ADRESS_DERIV2 pointer_adress_deriv2 = null;}
+	{ 
+		pointer_adress_deriv2=POINTER_ADRESS_DERIV2()
+		{ return new A_POINTER_ADRESS2(pointer_adress_deriv2); }
+	}
+
+
+A_POINTER_ADRESS_DERIV1 POINTER_ADRESS_DERIV1 () :
+{Token ponteiro = null;  ArrayList<String> ponteiro_list = new ArrayList<String>(); A_POINTER_ADRESS_DERIV2 pointer_adress_deriv2 = null;}
+{ 
+	(ponteiro=<ASTERISCO> {ponteiro_list.add(ponteiro.image);})+ (pointer_adress_deriv2=POINTER_ADRESS_DERIV2())?
+	{ return new A_POINTER_ADRESS_DERIV1(ponteiro_list, pointer_adress_deriv2); }
+}
+
+A_POINTER_ADRESS_DERIV2 POINTER_ADRESS_DERIV2 () :
+{Token ponteiro = null;  ArrayList<String> ponteiro_list = new ArrayList<String>();}
+{ 
+	<ECOMERCIAL>  (ponteiro=<ASTERISCO> {ponteiro_list.add(ponteiro.image);})*
+	{ return new A_POINTER_ADRESS_DERIV2("&", ponteiro_list); }
+}
+
+
+A_FACTOR FACTOR () :
+{A_FACTOR factor = null;}
+{
+	  factor=FACTOR1() { return factor; }
+	| factor=FACTOR2() { return factor; }
+	| factor=FACTOR3() { return factor; }
+	| factor=FACTOR4() { return factor; }
+	| factor=FACTOR5() { return factor; }
+}
+
+	A_FACTOR1 FACTOR1 () :
+	{A_POINTER_ADRESS pointer_adress = null; Token id = null; A_FUNCTIONS_ARGUMENTS functions_arguments = null;}
+	{ 
+		(pointer_adress=POINTER_ADRESS())? id=<I_ID> (functions_arguments=FUNCTIONS_ARGUMENTS())?
+		{ return new A_FACTOR1(pointer_adress, id.image, functions_arguments); } 
+	}
+
+	A_FACTOR2 FACTOR2 () :
+	{Token digitos = null;}
+	{ 
+		digitos=<I_DIGITS>
+		{ return new A_FACTOR2(digitos.image); }
+	}
+
+	A_FACTOR3 FACTOR3 () :
+	{Token digitosflutuantes = null;}
+	{ 
+		digitosflutuantes=<I_DIGITS_FLOATING>
+		 { return new A_FACTOR3(digitosflutuantes.image); }
+	}
+
+	A_FACTOR4 FACTOR4 () :
+	{}
+	{ 
+		<NULLL>
+		{ return new A_FACTOR4("NULL"); }
+	}
+
+	A_FACTOR5 FACTOR5 () :
+	{A_CHAR_WORDS char_words = null;}
+	{ 
+		<ASPASSIMPLES>  (char_words=CHAR_WORDS())?  <ASPASSIMPLES>
+		{ return new A_FACTOR5("'", char_words, "'"); }
+	}
+
+
+A_CHAR_WORDS CHAR_WORDS () :
+{A_CHAR_WORDS char_words = null;}
+{
+	 char_words=CHAR_WORDS1() { return char_words; }
+	|char_words=CHAR_WORDS2() { return char_words; }
+	|char_words=CHAR_WORDS3() { return char_words; }
+	|char_words=CHAR_WORDS4() { return char_words; }
+	|char_words=CHAR_WORDS5() { return char_words; }
+	|char_words=CHAR_WORDS6() { return char_words; }
+	|char_words=CHAR_WORDS7() { return char_words; }
+	|char_words=CHAR_WORDS8() { return char_words; }
+}
+
+	A_CHAR_WORDS1 CHAR_WORDS1 () :
+	{Token id = null;}
+	{ 
+		id=<I_ID> { return new A_CHAR_WORDS1(id.image); }
+	}
+
+	A_CHAR_WORDS2 CHAR_WORDS2 () :
+	{Token digitos = null;}
+	{ 
+		digitos=<I_DIGITS> { return new A_CHAR_WORDS2(digitos.image); }
+	}
+
+	A_CHAR_WORDS3 CHAR_WORDS3() :
+	{Token digitosflutuantes = null;}
+	{ 
+		digitosflutuantes=<I_DIGITS_FLOATING> { return new A_CHAR_WORDS3(digitosflutuantes.image); }
+	}
+
+	A_CHAR_WORDS4 CHAR_WORDS4 () :
+	{}
+	{ 
+		<PORCENTO> { return new A_CHAR_WORDS4("%"); }
+	}
+
+	A_CHAR_WORDS5 CHAR_WORDS5 () :
+	{}
+	{ 
+		<BARRAZERO> { return new A_CHAR_WORDS5("\\0"); }
+	}
+
+	A_CHAR_WORDS6 CHAR_WORDS6 () :
+	{}
+	{ 
+		<BARRANT> { return new A_CHAR_WORDS6("\\n"); }
+	}
+
+	A_CHAR_WORDS7 CHAR_WORDS7 () :
+	{}
+	{ 
+		<BARRART> { return new A_CHAR_WORDS7("\\r"); }
+	}
+
+	A_CHAR_WORDS8 CHAR_WORDS8 () :
+	{}
+	{ 
+		<BARRATT> { return new A_CHAR_WORDS8("\\t"); }
+	}
+
+
+A_VAR_IN_OUT VAR_IN_OUT () :
+{A_POINTER_ADRESS pointer_adress = null; Token id = null;}
+{
+	<VIRGULA> (pointer_adress=POINTER_ADRESS())? id =<I_ID>
+	{ return new A_VAR_IN_OUT(",", pointer_adress, id.image); }
+}
+
+
+A_CLAUSULA_TRANSACTION CLAUSULA_TRANSACTION () :
+{A_CLAUSULA_TRANSACTION clausula_transaction = null;}
+{
+	  clausula_transaction=CLAUSULA_TRANSACTION1() { return clausula_transaction; }
+	| clausula_transaction=CLAUSULA_TRANSACTION2() { return clausula_transaction; }
+}
+
+	A_CLAUSULA_TRANSACTION1 CLAUSULA_TRANSACTION1 () :
+	{A_COMAND comand = null;  ArrayList<A_COMAND> comand_list = new ArrayList<A_COMAND>();}
+	{ 
+
+		<PARALLEL> <TRANSACTION> <ACHAVES> (comand=COMAND() {comand_list.add(comand);})+  <FCHAVES>
+		{ return new A_CLAUSULA_TRANSACTION1("parallel", "transaction", "{", comand_list, "}"); }
+	}
+
+	A_CLAUSULA_TRANSACTION2 CLAUSULA_TRANSACTION2 () :
+	{A_COMAND comand = null;    A_DIRETIVA diretiva = null; A_TDECLIST tdeclist = null; ArrayList<A_COMAND> comand_list = new ArrayList<A_COMAND>();}
+	{ 
+		diretiva=DIRETIVA() <TRANSACTION>  <APARENTESES>  (tdeclist=TDECLIST())?  <FPARENTESES>  <ACHAVES> (comand=COMAND() {comand_list.add(comand);})+  <FCHAVES>
+		{ return new A_CLAUSULA_TRANSACTION2(diretiva, "transaction", "(", tdeclist, ")", "{", comand_list, "}"); }
+	}
+
+
+A_DIRETIVA DIRETIVA () :
+{A_DIRETIVA diretiva = null;}
+{
+	  diretiva=DIRETIVA1() { return diretiva; }
+	| diretiva=DIRETIVA2() { return diretiva; }
+	| diretiva=DIRETIVA3() { return diretiva; }
+}
+
+	A_DIRETIVA1 DIRETIVA1 () :
+	{}
+	{ 
+		<SECTION>
+		{ return new A_DIRETIVA1("section"); }
+	}
+
+	A_DIRETIVA2 DIRETIVA2 () :
+	{}
+	{ 
+		<FOR>
+		{ return new A_DIRETIVA2("for"); }
+	}
+
+	A_DIRETIVA3 DIRETIVA3 () :
+	{}
+	{ 
+		<TASK>
+		{ return new A_DIRETIVA3("task"); }
+	}
+
+
+A_TDECLIST TDECLIST () :
+{A_TDEC tdec = null; A_TDECLIST_REC tdeclist_rec = null;}
+{
+	tdec=TDEC() (tdeclist_rec=TDECLIST_REC())?
+	{ return new A_TDECLIST(tdec, tdeclist_rec); }
+}
+
+
+A_TDECLIST_REC TDECLIST_REC () :
+{A_TDECLIST tdeclist = null;}
+{
+	<VIRGULA>  tdeclist=TDECLIST()
+	{ return new A_TDECLIST_REC(",", tdeclist); }
+}
+
+
+A_TDEC TDEC () :
+{A_TDEC tdec = null;}
+{
+	  tdec=TDEC1() { return tdec; }
+	| tdec=TDEC2() { return tdec; }
+}
+
+	A_TDEC1 TDEC1 () :
+	{A_OPT opt = null; Token id = null;}
+	{ 
+		opt=OPT()  <DOISPONTOS>  id=<I_ID>
+		{ return new A_TDEC1(opt, ":", id.image); }
+	}
+
+	A_TDEC2 TDEC2 () :
+	{Token id = null;}
+	{ 
+		id=<I_ID>
+		{ return new A_TDEC2(id.image); }
+	}
+
+
+A_OPT OPT () :
+{A_OPT opt = null;}
+{
+	  opt=OPT1() { return opt; }
+	| opt=OPT2() { return opt; }
+	| opt=OPT3() { return opt; }
+}
+
+	A_OPT1 OPT1 () :
+	{}
+	{ 
+		<R>
+		{ return new A_OPT1("R"); }
+	}
+
+	A_OPT2 OPT2 () :
+	{}
+	{ 
+		<W>
+		{ return new A_OPT2("W"); }
+	}
+
+	A_OPT3 OPT3 () :
+	{}
+	{ 
+		<RW>
+		{ return new A_OPT3("RW"); }
+	}
