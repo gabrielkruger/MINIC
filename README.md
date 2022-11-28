@@ -13,9 +13,9 @@ Passos para compilação:
 Passos para execução:
 - java MiniC entrada.c
 
-###############################################
+##############
 Comportamento
-###############################################
+##############
 
 Um código de entrada programado na linguagem Mini C, deve ser passado para o pré-processador. 
 Um arquivo de saida, chamado "saida.c" será gerado. 
