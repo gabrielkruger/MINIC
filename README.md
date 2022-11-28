@@ -17,6 +17,6 @@ Passos para execução:
 Comportamento
 ##############
 
-Um código de entrada programado na linguagem Mini C, deve ser passado para o pré-processador. 
-Um arquivo de saida, chamado "saida.c" será gerado. 
-Através dele será possível analisar o resultado do código traduzido.
+-Um código de entrada programado na linguagem Mini C, deve ser passado para o pré-processador. 
+-Um arquivo de saida, chamado "saida.c" será gerado. 
+-Através dele será possível analisar o resultado do código traduzido.
